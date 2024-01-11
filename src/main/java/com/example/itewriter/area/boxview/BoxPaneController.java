@@ -1,21 +1,25 @@
 package com.example.itewriter.area.boxview;
 
-import com.example.itewriter.area.tightArea.TagSelector;
+import com.example.itewriter.area.tightArea.SequentialVariationSelector;
 import javafx.beans.binding.Bindings;
 
 public class BoxPaneController {
     public final BoxPane boxPane;
-    public final TagSelector tagSelector;
-
-    public BoxPaneController(BoxPane boxPane, TagSelector tagSelector) {
+    public final SequentialVariationSelector sequentialVariationSelector;
+    public BoxPaneController(BoxPane boxPane, SequentialVariationSelector sequentialVariationSelector) {
         this.boxPane = boxPane;
-        this.tagSelector = tagSelector;
-        this.tagSelector.selectedTagProperty().addListener((ob, ov, nv) -> {
-            Bindings.unbindContent(boxPane.texts, nv.getActiveVariation());
-            boxPane.texts.clear();
-            boxPane.texts.addAll(nv.getActiveVariation());
-            Bindings.bindContent(boxPane.texts, nv.getActiveVariation());
+        this.sequentialVariationSelector = sequentialVariationSelector;
+        this.sequentialVariationSelector.selectedTagObservable().addListener((ob, ov, newSelectedTag) -> {
+            Bindings.unbindContent(boxPane.getActiveVariation(), newSelectedTag.getActiveVariation());
+            boxPane.getActiveVariation().clear();
+            boxPane.getActiveVariation().addAll(newSelectedTag.getActiveVariation());
+            Bindings.bindContent(boxPane.getActiveVariation(), newSelectedTag.getActiveVariation());
         });
-
+    }
+    public boolean nextTag() {
+        return sequentialVariationSelector.nextTag();
+    }
+    public boolean previousTag() {
+        return sequentialVariationSelector.previousTag();
     }
 }

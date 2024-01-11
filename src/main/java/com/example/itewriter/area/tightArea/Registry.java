@@ -5,31 +5,63 @@ import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.ObservableSet;
 import javafx.scene.paint.Color;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.BiPredicate;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Registry {
+    private static final Map<String, Field> colors =
+            Stream.of(Color.class.getFields()).collect(Collectors.toMap(Field::getName, Function.identity()));
+    private static final String filename = "/Users/Bruno/Desktop/Itewriter/Itewriter_2-0/initialTags";
+
     // pytanie brzmi czy chcę manipulować tagami tylko poprzez rejestr, czy też na nich samych
     // najważniejsze są jednak zachowania tagu, czyli pola funkcjonalne
-    public final Set<Tag> availableTags = new HashSet<>();
+
+    public final ObservableSet<Tag> availableTags = FXCollections.observableSet();
+
     public void addTag(Color color) {
-        availableTags.add(new Tag(color));
     }
+
     // jeśli tylko Registry by tworzyło tagi, to mógłbym podawać rejestr w otwarty sposób
+    public Registry() {
+        try {
+            for (var line : Files.readAllLines(Paths.get(filename))) {
+                var splitLine = List.of(line.split("--"));
+                var name = splitLine.get(0);
+                if (colors.containsKey(name)) {
+                    var tag = new Tag(name, (Color) colors.get(name).get(null));
+                    for (int i = 1, size = splitLine.size(); i < size; i++) {
+                        var words = splitLine.get(i);
+                        ObservableList<StringProperty> variation = FXCollections.observableArrayList();
+                        Stream.of(words.split(" "))
+                                .map(SimpleStringProperty::new)
+                                .forEachOrdered(variation::add);
+                        tag.variations.add(variation);
+//                        System.out.printf("TagVariation:%n%s%n", variation);
+                    }
+                }
+            }
+        } catch (IOException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public class Tag {
         // current variation
+        private final StringProperty name = new SimpleStringProperty();
         private final ObjectProperty<Color> color = new SimpleObjectProperty<>();
         private final IntegerProperty currentIndex = new SimpleIntegerProperty(-1);
         ObservableList<ObservableList<StringProperty>> variations = FXCollections.observableArrayList();
-        // każdy tag ma swoje osobiste wariacje
-        // to jest to samo co z mapami, tam tag model to było to co tutaj się nazywa tag
-        // tylko tam identyfikatorem były enumy, a tutaj są adresy obiektów
-        // seems good to me
         private final ObjectBinding<ObservableList<StringProperty>> activeVariation = Bindings.createObjectBinding(
-                () -> variations.get(currentIndex.getValue()), variations , currentIndex
+                () -> variations.get(currentIndex.getValue()), variations, currentIndex
             /*
             czy wystarczyłby sam indeks?
              */
@@ -46,11 +78,13 @@ public class Registry {
         public ObjectProperty<Color> colorProperty() {
             return color;
         }
+
         public Color getColor() {
             return color.get();
         }
 
-        private Tag(Color color) {
+        private Tag(String name, Color color) {
+            this.name.setValue(name);
             this.color.setValue(color);
         }
 

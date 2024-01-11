@@ -3,7 +3,8 @@ package com.example.itewriter.area.root;
 import com.example.itewriter.area.boxview.BoxPane;
 import com.example.itewriter.area.boxview.BoxPaneController;
 import com.example.itewriter.area.tightArea.AreaController;
-import com.example.itewriter.area.tightArea.TagSelector;
+import com.example.itewriter.area.tightArea.Registry;
+import com.example.itewriter.area.tightArea.SequentialVariationSelector;
 import com.example.itewriter.area.tightArea.MyArea;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -20,13 +21,14 @@ import java.util.stream.Stream;
 
 
 public class WidgetRoot extends VBox {
-    final VBox widgets = new VBox();
-    final MyArea area = new MyArea();
-    final WidgetFactory widgetFactory = new WidgetFactory();
-    final TagSelector tagSelector = new TagSelector();
-    final BoxPane boxPane = new BoxPane();
-    final AreaController areaController = new AreaController(area, tagSelector);
-    final BoxPaneController boxPaneController = new BoxPaneController(boxPane, tagSelector);
+    public final VBox widgets = new VBox();
+    public final MyArea area = new MyArea();
+    public final WidgetFactory widgetFactory = new WidgetFactory();
+    public final Registry registry = new Registry();
+    public final SequentialVariationSelector sequentialVariationSelector = new SequentialVariationSelector(registry);
+    public final BoxPane boxPane = new BoxPane();
+    public final AreaController areaController = new AreaController(area, sequentialVariationSelector);
+    public final BoxPaneController boxPaneController = new BoxPaneController(boxPane, sequentialVariationSelector);
 
     public WidgetRoot() {
         widgets.getChildren().addAll(widgetFactory.all());
@@ -35,16 +37,16 @@ public class WidgetRoot extends VBox {
     public class WidgetFactory {
         @Retention(RetentionPolicy.RUNTIME)
         @Target(ElementType.METHOD)
-        @interface ControlBar{}
-        @ControlBar
+        @interface Widget {}
+        @Widget
         public Node color() {
             var colorBar = new HBox();
-            areaController.registry.availableTags.stream()
+            registry.availableTags.stream()
                     .map(tag -> new Button(tag.getColor().toString()))
                     .forEachOrdered(colorBar.getChildren()::add);
             return colorBar;
         }
-        @ControlBar
+        @Widget
         public Node form() {
             Spinner<Integer> mySegmentIndexSpinner = new Spinner<>();
             SpinnerValueFactory<Integer> mySegmentIndexValueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 10, 0);
@@ -66,8 +68,16 @@ public class WidgetRoot extends VBox {
 
             return new HBox(mySegmentIndexSpinner, cloneButton, field, editButton, variationButtons);
         }
+        @Widget
+        public Node boxPaneNavigation() {
+            var previous = new Button("previous");
+            previous.setOnAction(e -> boxPaneController.previousTag());
+            var next = new Button("next");
+            next.setOnAction(e -> boxPaneController.nextTag());
+            return new HBox(previous, next);
+        }
 
-        @ControlBar
+        @Widget
         public Node controls() {
             // na pewno chcę, żeby metoda stwarzała
             // czy statyczna?
@@ -109,7 +119,7 @@ public class WidgetRoot extends VBox {
 
         public Collection<Node> all() {
             return Stream.of(getClass().getMethods())
-                    .filter(method -> method.isAnnotationPresent(ControlBar.class))
+                    .filter(method -> method.isAnnotationPresent(Widget.class))
                     .map(m -> {
                         try {
                             return (Node) m.invoke(this);
