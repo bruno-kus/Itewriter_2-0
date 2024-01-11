@@ -1,5 +1,6 @@
 package com.example.itewriter;
 
+import com.example.itewriter.area.root.WidgetRoot;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -11,7 +12,8 @@ public class HelloApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("hello-view.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 320, 240);
+//        Scene scene = new Scene(fxmlLoader.load(), 320, 240);
+        Scene scene = new Scene(new WidgetRoot(), 600, 400);
         stage.setTitle("Hello!");
         stage.setScene(scene);
         stage.show();
