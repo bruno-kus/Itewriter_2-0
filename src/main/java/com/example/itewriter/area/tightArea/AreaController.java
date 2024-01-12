@@ -9,11 +9,11 @@ import static com.example.itewriter.area.tightArea.MyArea.EITHER_OPS;
 
 public class AreaController {
     MyArea area;
-    public final SequentialVariationSelector sequentialVariationSelector;
+    public final SequentialTagSelector sequentialTagSelector;
 
-    public AreaController(MyArea area, SequentialVariationSelector sequentialVariationSelector) {
+    public AreaController(MyArea area, SequentialTagSelector sequentialTagSelector) {
         this.area = area;
-        this.sequentialVariationSelector = sequentialVariationSelector;
+        this.sequentialTagSelector = sequentialTagSelector;
 
     }
 
@@ -32,7 +32,7 @@ public class AreaController {
         a następnie patrzył, gdzie też ten pusty został dodany!
          */
         // dodaj do modelu najpierw?
-        Either<String, MySegment> right = Either.right(new MySegment(tag, sequentialVariationSelector));
+        Either<String, MySegment> right = Either.right(new MySegment(tag, sequentialTagSelector));
         area.replaceSelection(ReadOnlyStyledDocument.fromSegment(
                 right,
                 null,
@@ -42,16 +42,16 @@ public class AreaController {
         var inserted = area.getTagSegments(tag).stream().filter(seg -> seg.getInVariationIndex() == -1).findFirst();
         if (inserted.isPresent()) {
             int i = area.getTagSegments(tag).indexOf(inserted.get());
-            sequentialVariationSelector.getSelectedTag().ifPresent(t ->
+            sequentialTagSelector.getSelectedTag().ifPresent(t ->
                     t.getActiveVariation().add(i, new SimpleStringProperty(area.getText(area.getSelection()))));
         }
     }
 
     public void replaceWithMySegment(int start, int end, Registry.Tag tag) {
         // tutaj uwierzytelniam
-        if (sequentialVariationSelector.tags.contains(tag))
+        if (sequentialTagSelector.tags.contains(tag))
             area.replace(start, end, ReadOnlyStyledDocument.fromSegment(
-                    Either.right(new MySegment(tag, sequentialVariationSelector)),
+                    Either.right(new MySegment(tag, sequentialTagSelector)),
                     null,
                     "",
                     EITHER_OPS

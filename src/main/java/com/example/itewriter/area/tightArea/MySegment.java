@@ -35,7 +35,7 @@ public class MySegment {
     że jeden kolor może być w różnych miejscach
     ale teraz też to samo osiągnąłem, po prostu porównując tagi na podstawie adresu :)
      */
-    public MySegment(Registry.Tag masterTag, SequentialVariationSelector sequentialVariationSelector) {
+    public MySegment(Registry.Tag masterTag, SequentialTagSelector sequentialTagSelector) {
         this.masterTag = masterTag;
         currentText = Bindings.createStringBinding(
                 // getValue jest nieco bardziej ekspresyjne w przeciwieństwie do samego get

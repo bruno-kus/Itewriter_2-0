@@ -54,26 +54,29 @@ public class Registry {
         }
     }
 
+    /**
+     * tutaj nie powinno być obecnie wybranej wariacji oj nie!
+     * wariacja jest o tyle wybrana i aktualna o ile jej VIEW!
+     */
     public class Tag {
-        // current variation
         private final StringProperty name = new SimpleStringProperty();
         private final ObjectProperty<Color> color = new SimpleObjectProperty<>();
-        private final IntegerProperty currentIndex = new SimpleIntegerProperty(-1);
-        ObservableList<ObservableList<StringProperty>> variations = FXCollections.observableArrayList();
-        private final ObjectBinding<ObservableList<StringProperty>> activeVariation = Bindings.createObjectBinding(
-                () -> variations.get(currentIndex.getValue()), variations, currentIndex
-            /*
-            czy wystarczyłby sam indeks?
-             */
-        );
-
-        public ObservableList<StringProperty> getActiveVariation() {
-            return activeVariation.get();
-        }
-
-        public ObjectBinding<ObservableList<StringProperty>> activeVariationProperty() {
-            return activeVariation;
-        }
+        public ObservableList<ObservableList<StringProperty>> variations = FXCollections.observableArrayList();
+//        private final IntegerProperty currentIndex = new SimpleIntegerProperty(-1);
+//        private final ObjectBinding<ObservableList<StringProperty>> activeVariation = Bindings.createObjectBinding(
+//                () -> variations.get(currentIndex.getValue()), variations, currentIndex
+//            /*
+//            czy wystarczyłby sam indeks?
+//             */
+//        );
+//
+//        public ObservableList<StringProperty> getActiveVariation() {
+//            return activeVariation.get();
+//        }
+//
+//        public ObjectBinding<ObservableList<StringProperty>> activeVariationProperty() {
+//            return activeVariation;
+//        }
 
         public ObjectProperty<Color> colorProperty() {
             return color;

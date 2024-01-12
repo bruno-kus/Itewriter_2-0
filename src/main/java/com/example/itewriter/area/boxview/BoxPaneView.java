@@ -1,19 +1,20 @@
 package com.example.itewriter.area.boxview;
 
-import javafx.beans.binding.Bindings;
-import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.ListProperty;
+import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
 
-public class BoxPane extends VBox {
-
-    public ObservableList<StringProperty> activeVariation = FXCollections.observableArrayList();
-    public ObservableList<StringProperty> getActiveVariation() {
+public class BoxPaneView extends VBox {
+    /* pytanie co robimy tutaj, bo faktycznie pudełko ma swój stan
+    czy zostajemy przy propertiesach, no raczej tak
+     */
+    public ListProperty<StringProperty> activeVariation = new SimpleListProperty<>();
+    public ObservableList<StringProperty> getActiveVariationProperty() {
         return activeVariation;
     }
     {

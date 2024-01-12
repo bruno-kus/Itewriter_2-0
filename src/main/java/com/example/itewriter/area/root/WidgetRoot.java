@@ -1,11 +1,9 @@
 package com.example.itewriter.area.root;
 
-import com.example.itewriter.area.boxview.BoxPane;
-import com.example.itewriter.area.boxview.BoxPaneController;
-import com.example.itewriter.area.tightArea.AreaController;
-import com.example.itewriter.area.tightArea.Registry;
-import com.example.itewriter.area.tightArea.SequentialVariationSelector;
-import com.example.itewriter.area.tightArea.MyArea;
+import com.example.itewriter.area.boxview.BoxPaneView;
+import com.example.itewriter.area.boxview.BoxPaneSequentialController;
+import com.example.itewriter.area.boxview.Buttonize;
+import com.example.itewriter.area.tightArea.*;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
@@ -25,19 +23,27 @@ public class WidgetRoot extends VBox {
     public final MyArea area = new MyArea();
     public final WidgetFactory widgetFactory = new WidgetFactory();
     public final Registry registry = new Registry();
-    public final SequentialVariationSelector sequentialVariationSelector = new SequentialVariationSelector(registry);
-    public final BoxPane boxPane = new BoxPane();
-    public final AreaController areaController = new AreaController(area, sequentialVariationSelector);
-    public final BoxPaneController boxPaneController = new BoxPaneController(boxPane, sequentialVariationSelector);
+    public final BoxPaneView boxPaneView = new BoxPaneView();
+    /**
+     * jak już przy tym jesteśmy to pytanie czy
+     * area sama w sobie potrzebuje rejestru, czy wystarczy, że otrzyma go controller
+     * jeżeli area sama w sobie otrzyma rejestr to on przejdzie do controlera tak czy siak :)
+     * czy może istnieć area bez rejestru?
+     */
+    public final AreaController areaController = new AreaController(area, registry);
+    public final BoxPaneSequentialController boxPaneSequentialController = new BoxPaneSequentialController(boxPaneView, registry);
 
     public WidgetRoot() {
         widgets.getChildren().addAll(widgetFactory.all());
-        getChildren().addAll(area, widgets, boxPane);
+        getChildren().addAll(area, widgets, boxPaneView);
     }
+
     public class WidgetFactory {
         @Retention(RetentionPolicy.RUNTIME)
         @Target(ElementType.METHOD)
-        @interface Widget {}
+        @interface Widget {
+        }
+
         @Widget
         public Node color() {
             var colorBar = new HBox();
@@ -46,6 +52,7 @@ public class WidgetRoot extends VBox {
                     .forEachOrdered(colorBar.getChildren()::add);
             return colorBar;
         }
+
         @Widget
         public Node form() {
             Spinner<Integer> mySegmentIndexSpinner = new Spinner<>();
@@ -68,13 +75,49 @@ public class WidgetRoot extends VBox {
 
             return new HBox(mySegmentIndexSpinner, cloneButton, field, editButton, variationButtons);
         }
+
         @Widget
         public Node boxPaneNavigation() {
-            var previous = new Button("previous");
-            previous.setOnAction(e -> boxPaneController.previousTag());
-            var next = new Button("next");
-            next.setOnAction(e -> boxPaneController.nextTag());
-            return new HBox(previous, next);
+            var previousTag = new Button("previousTag");
+            previousTag.setOnAction(e -> boxPaneSequentialController.previousTag());
+            var nextTag = new Button("nextTag");
+            nextTag.setOnAction(e -> boxPaneSequentialController.nextTag());
+            var previousVariation = new Button("previousVariation");
+            previousVariation.setOnAction(e -> boxPaneSequentialController.previousVariation());
+            var nextVariation = new Button("nextVariation");
+            previousVariation.setOnAction(e -> boxPaneSequentialController.nextVariation());
+            return new HBox(previousTag, nextTag, previousVariation, nextVariation);
+        }
+
+        /*
+        mogę oznaczyć klasę w której robię guziki za pomocą adnotacji
+        wtedy będę wiedział, że należy przeszukać właśnie tą klasę
+        w poszukiwaniu metod
+         */
+        @Widget
+        public Node reflexivelyButtonized() {
+            try {
+                var hbox = new HBox();
+                Stream.of(Class
+                        .forName("com.example.itewriter.area.boxview.BoxPaneSequentialController")
+                        .getMethods())
+                        .filter(method -> method.isAnnotationPresent(Buttonize.class))
+                        .map(method -> {
+                            final var name = method.getName();
+                            final var button = new Button(name);
+                            button.setOnAction(e -> {
+                                try {
+                                    method.invoke(boxPaneSequentialController);
+                                } catch (IllegalAccessException | InvocationTargetException ex) {
+                                    throw new RuntimeException(ex);
+                                }
+                            });
+                            return button;
+                        }).forEachOrdered(hbox.getChildren()::add);
+                    return hbox;
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Widget
