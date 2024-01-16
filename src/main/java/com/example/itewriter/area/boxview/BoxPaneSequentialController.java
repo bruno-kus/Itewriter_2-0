@@ -43,6 +43,11 @@ public class BoxPaneSequentialController {
             Bindings.unbindContent(boxPaneView.getActiveVariationProperty(), ov);
             boxPaneView.getActiveVariationProperty().setAll(nv);
             Bindings.bindContent(boxPaneView.getActiveVariationProperty(), nv);
+            /*
+            powyższy kod zakłada, że binduję boxPane z listą obserwowalnych stringów
+            żeby go naprawić, muszę sprawić, żeby VariationSelector faktycznie wybierał wariację
+             */
+
         });
     }
     @Buttonize

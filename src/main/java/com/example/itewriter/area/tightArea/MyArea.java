@@ -28,6 +28,7 @@ public class MyArea extends GenericStyledArea<Void, Either<String, MySegment>, S
         );
     }
 
+
     public List<MySegment> getMySegments() {
         return getAllSegments().stream().filter(Either::isRight).map(Either::getRight).toList();
     }

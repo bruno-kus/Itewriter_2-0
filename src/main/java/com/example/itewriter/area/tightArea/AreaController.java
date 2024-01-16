@@ -1,8 +1,11 @@
 package com.example.itewriter.area.tightArea;
 
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import org.fxmisc.richtext.model.ReadOnlyStyledDocument;
 import org.reactfx.util.Either;
+
+import java.util.TreeSet;
 
 import static com.example.itewriter.area.tightArea.MyArea.EITHER_OPS;
 
@@ -17,7 +20,23 @@ public class AreaController {
 
     }
 
-
+    {
+        area.setOnKeyPressed(key -> {
+            String keyText = key.getText();
+            if (area.isCaretAtSegment()) {
+                StringProperty textProperty = area.getSegmentAtCursor().textProperty();
+                textProperty.setValue(new StringBuilder(textProperty.getValue()).insert(getPositionInSegmentAtCursor(), keyText));
+            }
+            // to api powinno być zdefiniowane wewnątrz samej wariacji
+            //
+            for (var t : tags) {
+                for (var p : getSelectedVariation.tailSet(area.getCaretPosition())) {
+                    var pos = p.positionProperty();
+                    pos.setValue(pos.getValue + keyText.length());
+                }
+            }
+        });
+    }
     public void writeMySegment(AreaRegistry.Tag tag) {
         area.setOnKeyPressed(k -> insertMySegment(area.getCaretPosition(), tag));
     }
