@@ -17,7 +17,7 @@ public class MySegment {
     ale żeby stworzyć podsegment modyfikuję listę którą dzielą obydwa!
      */
 //    Tag tag; // powinien być final ale weź ogarnij konstruktor, musiałbym zrobić, żeby empty był nieco inteligentniejszy
-    Registry.Tag masterTag;
+    AreaRegistry.Tag masterTag;
     IntegerProperty inVariationIndex = new SimpleIntegerProperty(-1);
     StringBinding currentText;
 
@@ -35,7 +35,7 @@ public class MySegment {
     że jeden kolor może być w różnych miejscach
     ale teraz też to samo osiągnąłem, po prostu porównując tagi na podstawie adresu :)
      */
-    public MySegment(Registry.Tag masterTag, SequentialTagSelector sequentialTagSelector) {
+    public MySegment(AreaRegistry.Tag masterTag, SequentialTagSelector sequentialTagSelector) {
         this.masterTag = masterTag;
         currentText = Bindings.createStringBinding(
                 // getValue jest nieco bardziej ekspresyjne w przeciwieństwie do samego get
@@ -64,7 +64,7 @@ public class MySegment {
                 '}';
     }
 
-    public Registry.Tag getTag() {
+    public AreaRegistry.Tag getTag() {
         return masterTag;
     }
 }

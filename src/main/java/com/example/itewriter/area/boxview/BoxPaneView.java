@@ -13,7 +13,7 @@ public class BoxPaneView extends VBox {
     /* pytanie co robimy tutaj, bo faktycznie pudełko ma swój stan
     czy zostajemy przy propertiesach, no raczej tak
      */
-    public ListProperty<StringProperty> activeVariation = new SimpleListProperty<>();
+    private final ListProperty<StringProperty> activeVariation = new SimpleListProperty<>();
     public ObservableList<StringProperty> getActiveVariationProperty() {
         return activeVariation;
     }

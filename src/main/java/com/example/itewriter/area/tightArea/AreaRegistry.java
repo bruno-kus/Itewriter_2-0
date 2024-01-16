@@ -1,7 +1,5 @@
 package com.example.itewriter.area.tightArea;
 
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -17,7 +15,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Registry {
+public class AreaRegistry {
     private static final Map<String, Field> colors =
             Stream.of(Color.class.getFields()).collect(Collectors.toMap(Field::getName, Function.identity()));
     private static final String filename = "/Users/Bruno/Desktop/Itewriter/Itewriter_2-0/initialTags";
@@ -27,11 +25,11 @@ public class Registry {
 
     public final ObservableSet<Tag> availableTags = FXCollections.observableSet();
 
-    public void addTag(Color color) {
+    private void addTag(Color color) {
     }
 
     // jeśli tylko Registry by tworzyło tagi, to mógłbym podawać rejestr w otwarty sposób
-    public Registry() {
+    public AreaRegistry() {
         try {
             for (var line : Files.readAllLines(Paths.get(filename))) {
                 var splitLine = List.of(line.split("--"));
@@ -86,7 +84,7 @@ public class Registry {
             return color.get();
         }
 
-        private Tag(String name, Color color) {
+        public Tag(String name, Color color) {
             this.name.setValue(name);
             this.color.setValue(color);
         }

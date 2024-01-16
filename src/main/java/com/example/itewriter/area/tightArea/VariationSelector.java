@@ -18,7 +18,7 @@ public class VariationSelector {
     operowanie na mapie jest proste
     po prostu podnoszę indeks dla tego który selector aktualnie ma wybrany :)
      */
-    public ObservableMap<Registry.Tag, Integer> currentIndices = FXCollections.observableHashMap();
+    public ObservableMap<AreaRegistry.Tag, Integer> currentIndices = FXCollections.observableHashMap();
 
     private final ObservableValue<ObservableList<StringProperty>> selectedVariation;
     public VariationSelector(SequentialTagSelector tagSelector) {
@@ -41,11 +41,11 @@ public class VariationSelector {
     public ObservableValue<ObservableList<StringProperty>> getSelectedVariationObservable() {
         return selectedVariation;
     }
-    public void setIndex(Registry.Tag tag, Integer index) {
+    public void setIndex(AreaRegistry.Tag tag, Integer index) {
         if (index >= 0 && index < tag.variations.size()) currentIndices.put(tag, index);
         else throw new IllegalArgumentException();
     }
-    public Integer getIndex(Registry.Tag tag) {
+    public Integer getIndex(AreaRegistry.Tag tag) {
         return currentIndices.get(tag);
     }
 }

@@ -22,7 +22,7 @@ public class WidgetRoot extends VBox {
     public final VBox widgets = new VBox();
     public final MyArea area = new MyArea();
     public final WidgetFactory widgetFactory = new WidgetFactory();
-    public final Registry registry = new Registry();
+    public final AreaRegistry areaRegistry = new AreaRegistry();
     public final BoxPaneView boxPaneView = new BoxPaneView();
     /**
      * jak już przy tym jesteśmy to pytanie czy
@@ -30,8 +30,8 @@ public class WidgetRoot extends VBox {
      * jeżeli area sama w sobie otrzyma rejestr to on przejdzie do controlera tak czy siak :)
      * czy może istnieć area bez rejestru?
      */
-    public final AreaController areaController = new AreaController(area, registry);
-    public final BoxPaneSequentialController boxPaneSequentialController = new BoxPaneSequentialController(boxPaneView, registry);
+    public final AreaController areaController = new AreaController(area, areaRegistry);
+    public final BoxPaneSequentialController boxPaneSequentialController = new BoxPaneSequentialController(boxPaneView, areaRegistry);
 
     public WidgetRoot() {
         widgets.getChildren().addAll(widgetFactory.all());
@@ -47,7 +47,7 @@ public class WidgetRoot extends VBox {
         @Widget
         public Node color() {
             var colorBar = new HBox();
-            registry.availableTags.stream()
+            areaRegistry.availableTags.stream()
                     .map(tag -> new Button(tag.getColor().toString()))
                     .forEachOrdered(colorBar.getChildren()::add);
             return colorBar;

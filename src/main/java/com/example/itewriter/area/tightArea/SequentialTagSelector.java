@@ -17,9 +17,9 @@ public class SequentialTagSelector {
      * tags jest listą w przeciwieństwie do zbioru w Registry
      * każdy Selector może mieć inną strukturę danych
      */
-    public final ObservableList<Registry.Tag> tags = FXCollections.observableArrayList();
+    public final ObservableList<AreaRegistry.Tag> tags = FXCollections.observableArrayList();
     public final IntegerProperty currentIndex = new SimpleIntegerProperty(-1);
-    private final ObservableValue<Registry.Tag> selectedTag = Bindings.createObjectBinding(
+    private final ObservableValue<AreaRegistry.Tag> selectedTag = Bindings.createObjectBinding(
             () -> {
                 if (currentIndex.getValue() > 0 && currentIndex.getValue() < tags.size())
                     return tags.get(currentIndex.getValue());
@@ -35,9 +35,9 @@ public class SequentialTagSelector {
 //            },
 //
 //    );
-    public SequentialTagSelector(Registry registry) {
-        registry.availableTags.addListener(
-                (SetChangeListener.Change<? extends Registry.Tag> change) -> {
+    public SequentialTagSelector(AreaRegistry areaRegistry) {
+        areaRegistry.availableTags.addListener(
+                (SetChangeListener.Change<? extends AreaRegistry.Tag> change) -> {
                     if (change.wasAdded()) tags.add(change.getElementAdded());
                     else if (change.wasRemoved()) tags.add(change.getElementRemoved());
                 }
@@ -48,11 +48,11 @@ public class SequentialTagSelector {
 //        }
     }
 
-    public Optional<Registry.Tag> getSelectedTag() {
+    public Optional<AreaRegistry.Tag> getSelectedTag() {
         return Optional.ofNullable(selectedTag.getValue());
     }
 
-    public ObservableValue<Registry.Tag> selectedTagObservable() {
+    public ObservableValue<AreaRegistry.Tag> selectedTagObservable() {
         return selectedTag;
     }
 

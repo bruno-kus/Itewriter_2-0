@@ -8,13 +8,10 @@ import org.reactfx.util.*;
 import java.util.*;
 
 public class MyArea extends GenericStyledArea<Void, Either<String, MySegment>, String> {
+//    private final Registry registry = new Registry();
     private static final TextOps<String, String> STYLED_TEXT_OPS = SegmentOps.styledTextOps();
     private static final MySegmentOps<String> MY_OPS = new MySegmentOps<>();
     static final TextOps<Either<String, MySegment>, String> EITHER_OPS = STYLED_TEXT_OPS._or(MY_OPS, (e1, e2) -> Optional.empty());
-
-    /**
-     * w konstruktorze powinien być rejestr tagów?
-     */
     public MyArea() {
         super(
                 null,
@@ -41,7 +38,7 @@ public class MyArea extends GenericStyledArea<Void, Either<String, MySegment>, S
                 toList();
     }
 
-    public List<MySegment> getTagSegments(Registry.Tag tag) {
+    public List<MySegment> getTagSegments(AreaRegistry.Tag tag) {
         return getMySegments().stream().filter(seg -> seg.getTag().equals(tag)).toList();
     }
 }

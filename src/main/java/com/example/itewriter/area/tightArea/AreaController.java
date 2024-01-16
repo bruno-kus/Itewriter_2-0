@@ -17,14 +17,15 @@ public class AreaController {
 
     }
 
-    public void writeMySegment(Registry.Tag tag) {
+
+    public void writeMySegment(AreaRegistry.Tag tag) {
         area.setOnKeyPressed(k -> insertMySegment(area.getCaretPosition(), tag));
     }
 
-    public void insertMySegment(int position, Registry.Tag tag) {
+    public void insertMySegment(int position, AreaRegistry.Tag tag) {
         replaceWithMySegment(position, position, tag);
     }
-    private void replaceSelectionWithMySegment(Registry.Tag tag) {
+    private void replaceSelectionWithMySegment(AreaRegistry.Tag tag) {
         System.out.println("MyArea::replaceSelectionWithMySegment");
 
         /*
@@ -47,7 +48,7 @@ public class AreaController {
         }
     }
 
-    public void replaceWithMySegment(int start, int end, Registry.Tag tag) {
+    public void replaceWithMySegment(int start, int end, AreaRegistry.Tag tag) {
         // tutaj uwierzytelniam
         if (sequentialTagSelector.tags.contains(tag))
             area.replace(start, end, ReadOnlyStyledDocument.fromSegment(

@@ -1,9 +1,10 @@
 package com.example.itewriter.area.boxview;
 
-import com.example.itewriter.area.tightArea.Registry;
+import com.example.itewriter.area.tightArea.AreaRegistry;
 import com.example.itewriter.area.tightArea.SequentialTagSelector;
 import com.example.itewriter.area.tightArea.VariationSelector;
 import javafx.beans.binding.Bindings;
+import javafx.scene.layout.HBox;
 
 /**
  * moje pytanie brzmi:
@@ -21,6 +22,7 @@ public class BoxPaneSequentialController {
     BOX CONTROLLER tyczy się tylko boxa
     może nie mieć sensu w ogóle kontroler pojedynczej wariacji dla innych widoków jak choćby sama strefa!
      */
+
     public final BoxPaneView boxPaneView;
     private final VariationSelector variationSelector;
     private final SequentialTagSelector sequentialTagSelector;
@@ -33,10 +35,10 @@ public class BoxPaneSequentialController {
     jak i samym tagiem
     pytanie co jest potrzebne do jakiej zmiany, na których mi zależy oraz która klasa powinna tym się zajmować
      */
-    public BoxPaneSequentialController(BoxPaneView boxPaneView, Registry registry) {
+    public BoxPaneSequentialController(BoxPaneView boxPaneView, AreaRegistry areaRegistry) {
         // czy ta klasa powinna mieć properties'a, który byłby zbindowany
         this.boxPaneView = boxPaneView;
-        this.variationSelector = new VariationSelector(sequentialTagSelector = new SequentialTagSelector(registry));
+        this.variationSelector = new VariationSelector(sequentialTagSelector = new SequentialTagSelector(areaRegistry));
         this.variationSelector.getSelectedVariationObservable().addListener((ob, ov, nv) -> {
             Bindings.unbindContent(boxPaneView.getActiveVariationProperty(), ov);
             boxPaneView.getActiveVariationProperty().setAll(nv);
