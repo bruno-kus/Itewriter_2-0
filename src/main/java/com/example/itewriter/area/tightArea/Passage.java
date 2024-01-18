@@ -11,6 +11,7 @@ public class Passage implements Comparable<Passage>{
         this.text.setValue(text);
     }
 
+
     static void bindBidirectional(StringProperty stringProperty) {
         stringProperty.addListener(e -> {
         });
@@ -43,6 +44,7 @@ public class Passage implements Comparable<Passage>{
     }
 
     IntegerProperty position = new SimpleIntegerProperty();
+
 
     public int getPosition() {
         return position.get();

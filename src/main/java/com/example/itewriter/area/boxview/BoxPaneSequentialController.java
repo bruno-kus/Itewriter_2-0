@@ -1,13 +1,8 @@
 package com.example.itewriter.area.boxview;
 
-import com.example.itewriter.area.tightArea.Passage;
 import com.example.itewriter.area.tightArea.Registry;
 import com.example.itewriter.area.tightArea.SequentialTagSelector;
 import com.example.itewriter.area.tightArea.VariationSelector;
-import javafx.beans.binding.Bindings;
-import javafx.collections.ObservableList;
-
-import java.util.Collections;
 
 /**
  * moje pytanie brzmi:
@@ -43,13 +38,9 @@ public class BoxPaneSequentialController {
         this.boxPaneView = boxPaneView;
         this.variationSelector = new VariationSelector(sequentialTagSelector = new SequentialTagSelector(registry));
         this.variationSelector.getSelectedVariationObservable().addListener((variationProperty, oldVariation, newVariation) -> {
-//            Bindings.unbindContent(boxPaneView.getActiveVariationProperty(), ov);
-//            boxPaneView.getActiveVariationProperty().setAll(nv);
-//            Bindings.bindContent(boxPaneView.getActiveVariationProperty(), nv);
+            boxPaneView.displayedPassages.setValue(registry.viewOf(newVariation));
 
-//            nv.unbindObservableList(boxPaneView.getSimpleInternalModelProperty());
-//            boxPaneView.getSimpleInternalModelProperty().setAll(nv.getPassages());
-//            nv.bindObservableList(boxPaneView.getSimpleInternalModelProperty());
+            // to powinno być przeniesione do implementacji viewOf
             for (var textFieldPassage : boxPaneView.getSimpleInternalModelProperty()) {
                 var variationPassage = newVariation.getPassage(textFieldPassage.getPosition());
                 textFieldPassage.textProperty().unbind();

@@ -37,6 +37,14 @@ public class Registry {
     public void bindBidirectional(Variation variation, ObservableList<Passage> passages) {
 
     }
+    public ObservableList<Passage> viewOf(Variation variation) {
+        // sprawdzić czy ta instancja wariacji należy do tego modelu
+        // to może i lepiej zrobić, variation::viewOf -> może to i by jednak miało sens, żeby każda wariacja
+        // miała dostęp do modelu
+        // chociaż trzeba się zastanowić czy to w ogóle będzie potrzebne
+        // i czy to w ogóle powinny być pasaże czy tylko Stringi
+        // najważniejsze teraz jest tak czy siak aktualizowanie pozycji
+    }
     public void offsetAllTags(int position, int offset) {
         for (var tag : allTags) {
             tag.offsetAllVariations(position, offset);

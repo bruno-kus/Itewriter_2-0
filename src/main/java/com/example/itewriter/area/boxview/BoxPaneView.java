@@ -25,13 +25,18 @@ public class BoxPaneView extends VBox {
     public ObservableList<Passage> getSimpleInternalModelProperty() {
         return simpleInternalModel;
     }
+    public ListProperty<Passage> displayedPassages = new SimpleListProperty<>();
     {
+
         /*
         i to poniższe zastępujemy
         odwołanie do Variation.bindContents i za każdym razem kiedy zmienia się wartość tutaj to
         ale to robię w wybieraku!
         w środku boxa zajmuję się tylko wyświetleniem pudeł
          */
+//        displayedPassages.get().addListener(); !
+        // i za każdym razem, gdy się zmienia displayedPassages to usuwam stare oczywiście
+        // za pomocą getChildren()::setAll albo ::clear
         simpleInternalModel.addListener((ListChangeListener.Change<? extends Passage> change) -> {
             while (change.next()) {
                 if (change.wasAdded()) {

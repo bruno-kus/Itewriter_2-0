@@ -1,19 +1,136 @@
 package com.example.itewriter.area.tightArea;
 
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import com.example.itewriter.area.util.MyRange;
+import javafx.beans.property.*;
+import javafx.beans.value.ObservableValue;
+import javafx.util.Pair;
 import org.fxmisc.richtext.model.ReadOnlyStyledDocument;
 import org.reactfx.util.Either;
+
+import java.util.*;
 
 import static com.example.itewriter.area.tightArea.MyArea.EITHER_OPS;
 
 
+/**
+ * TODO:
+ * MEGA WAŻNE I AKTUALNE:
+ * najpierw zdecydować się kto przechowuje informacje o tym, które tagi są obecnie wybrane przez strefę
+ * ależ oczywiście, że AreaController!
+ * w jakim formacie przechowuje te dane?
+ * Tag={wybrana wariacja}
+ * czy to powinno być na zasadzie mapy, która zmienia i dodaję elementy czy każdemu tagowi powinna być
+ * przyporządkowana zmienna?
+ */
 public class AreaController {
     MyArea area;
+    private final Map<Registry.Tag, ObservableValue<Variation>> manifestVariations = new HashMap<>();
+
+    private void putToManifestVariations(Registry.Tag tag) {
+        var manifestVariation = new SimpleObjectProperty<>(); // uzależnić od Variation selectora jakiegoś :)
+        manifestVariation.addListener((ob, ov, nv) -> {
+//            area.createMultiChange() // TODO
+            area.createMultiChange().commit();
+        });
+        manifestVariations.put(tag, manifestVariation);
+    }
+
+    /**
+     * jak na razie to podoba mi się umiejscowienie tej metody w kontrolerze
+     * ponieważ będzie tworzyła segmenty oraz zamieniała też poprzednią narrację
+     * ewentualnie mogę ją rozbić na dwa wywołania, gdzie strefa tylko uaktualnia, a
+     * kontroler aktualizuje też pozycje
+     * tylko, co z tego, że ja se zrobię multiChanges skoro nie mam tych multi changes odbitych...
+     */
+    public static void multiChange(
+            MyArea area, List<Pair<MyRange, String>> oldValues, List<Pair<MyRange, String>> newValues) {
+        if (oldValues.size() != newValues.size()) throw new IllegalArgumentException();
+        var builder = area.createMultiChange();
+        for (int i = 0; i < oldValues.size(); i++) {
+            var oldRange = oldValues.get(i).getKey();
+            var newText = newValues.get(i).getValue();
+            builder.replaceText(oldRange.start, oldRange.end, newText);
+        }
+        /*
+        commit wykonuje zmiany po sobie tak zupełnie zwyczajnie
+        i jest tak jak myślę, że wywoływanie replace dodaje polecenie na absolutnych wartościach
+        do listy, która niestety jest prywatna
+        najlepszy sposób to samemu zaimplementować mój replacer
+        przy okazji od razu będzie aktualizował pozycje
+        aczkolwiek
+         */
+        builder.commit();
+    }
+
+    public static List<Integer> allNewPositions(
+            List<Integer> changingOldPositions,
+            List<Integer> changingOldLengths,
+            List<Integer> changingNewLengths,
+            List<IntegerProperty> allOldPositions) {
+        var allNewPositions = new ArrayList<Integer>(allOldPositions.size());
+
+        var allPositionsAffected = allOldPositions.subList(
+                Collections.binarySearch(
+                        allOldPositions,
+                        new SimpleIntegerProperty(changingOldPositions.get(0)),
+                        Comparator.comparing(IntegerProperty::getValue)) + 1,
+                allOldPositions.size()
+        );
+        // zrobić inline'owy anonimowy Iterator, który właśnie taką deltę liczy :)r
+        var deltaIterator = new Iterator<Integer>() {
+            final Iterator<Integer> oldLengthIterator = changingOldLengths.iterator();
+            final Iterator<Integer> newLengthIterator = changingNewLengths.iterator();
+            @Override
+            public boolean hasNext() {
+                return newLengthIterator.hasNext() && oldLengthIterator.hasNext();
+            }
+            @Override
+            public Integer next() {
+                return newLengthIterator.next() - oldLengthIterator.next();
+            }
+        };
+        // TODO
+        /*
+        chyba to mam
+        skoro wariacje są indeksowane i  zawsze kwadratowe, to wystarczy, że do każdej kolumny podam gdzie się zaczyna
+        innymi słowy mapa to: inVariationIndex -> Position
+        mapa która do każdej zamanifestowanej wariacji mapuje mapę, która index w tej wariacji mapuje do pozycji
+        Map<Variation, Map<Integer, Integer> :) <- trzeba do opakować klasą
+        Map<Registry.Tag, Map<Integer, Integer> <- mogę też pominąć wariację, ciekawe...
+        Map<Registry.Tag, Variation>
+        za każdym razem kiedy zmienia się wartość obecnie zamanifestowanej wariacji
+        Map<Registry.Tag,
+
+        sama w sobie wariacja może mieć te indeksy
+        bo wa
+
+
+
+        TO MA MEGA DUŻO SENSU!
+         */
+        int offset = deltaIterator.next();
+        for (var pos : allPositionsAffected) {
+            int delta = 0;
+            if (Collections.binarySearch(changingOldPositions, pos.getValue()) >= 0) {
+                delta = deltaIterator.next();
+            }
+            pos.setValue(pos.getValue() + offset);
+            offset += delta;
+        }
+
+        // ja tak czy siak chcę stworzyć całkiem nową listę wartości
+
+
+        return allNewPositions;
+    }
+
     /**
      * może być zarówno podane przez konstruktor, jeśli chcę synchronizacji jak i utworzone nowe
+     * służy do obsługi MLL, możliwe, że trafi do innej klasy
+     * właściwie to on jest odpowiedzialny za wybiernaie, co będę swapować, więc chyba jest poprawnie
      */
     public final SequentialTagSelector sequentialTagSelector;
+
 
     public AreaController(MyArea area, Registry registry, SequentialTagSelector sequentialTagSelector) {
         this.area = area;
@@ -21,6 +138,9 @@ public class AreaController {
 
         this.area.setOnKeyPressed(key -> {
             registry.offsetAllTags(area.getCaretPosition(), key.getText().length());
+
+
+
             /*
             mega ważne! zmiany w pasażach powinny dotyczyć tylko tej samej wariacji
             zmiany w tekście nienależącym do nikogo powinny być we wszystkich wprowadzone
