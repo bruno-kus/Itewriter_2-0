@@ -39,7 +39,7 @@ public class MyArea extends GenericStyledArea<Void, Either<String, MySegment>, S
                 toList();
     }
 
-    public List<MySegment> getTagSegments(AreaRegistry.Tag tag) {
+    public List<MySegment> getTagSegments(Registry.Tag tag) {
         return getMySegments().stream().filter(seg -> seg.getTag().equals(tag)).toList();
     }
 }

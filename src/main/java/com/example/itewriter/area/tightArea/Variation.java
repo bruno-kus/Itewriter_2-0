@@ -1,6 +1,5 @@
 package com.example.itewriter.area.tightArea;
 
-import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -9,12 +8,12 @@ import javafx.collections.ObservableMap;
 import java.util.*;
 
 public class Variation {
-    final ObservableList<Passage> passages = new SimpleListProperty<>();
+    public final ObservableList<Passage> allPassages = new SimpleListProperty<>();
     {
         // ten blok nie należy tutaj do klasy
         // rzecz do zrobienia to zastanowić się kto będzie wiązał ze sobą wariację tak
         // żeby uzupełniały puste segmenty :)
-        passages.addListener((ListChangeListener.Change<? extends Passage> change) -> {
+        allPassages.addListener((ListChangeListener.Change<? extends Passage> change) -> {
             var allVariationsOfThisTag = new ArrayList<Variation>();
             while (change.next()) {
                 if (change.wasAdded()) {
@@ -30,11 +29,11 @@ public class Variation {
     dodawać nowe do hashmapy a usuwać stare
      */
     private final ObservableMap<Integer, Passage> passageMap = FXCollections.observableHashMap();
-    private Passage getPassage(int position) {
+    public Passage getPassage(int position) {
         return passageMap.get(position);
     }
     {
-        passages.addListener((ListChangeListener.Change<? extends Passage> change) -> {
+        allPassages.addListener((ListChangeListener.Change<? extends Passage> change) -> {
             while (change.next()) {
                 if (change.wasAdded()) {
                     for (var p : change.getAddedSubList()) {
@@ -55,17 +54,6 @@ public class Variation {
 
 
 
-    /*
-    moje opcje to albo lista która będzie sieczką ale przyozdobiona posortowaniem albo zwykła lista i własne api
-     */
-
-
-
-
-    void modifySomeValue(Passage passage, String text) {
-        offsetPositions(passage, text.length() - passage.text.getValue().length());
-        passage.text.setValue(text);
-    }
 
     /**
      * to jest powód dla którego mam listę, a nie zbiór
@@ -74,9 +62,17 @@ public class Variation {
      * lista modyfikowalnych
      * zbiór niemodyfikowalnych
      */
-    public void offsetPositions(Passage passage, int offset) {
-        for (int i = Collections.binarySearch(passages, passage) + 1; i < passages.size(); i++) {
-            passages.get(i).positionProperty().setValue(passage.getPosition() + offset);
+//    public void offsetPositions(Passage passage, int offset) {
+//        for (int i = Collections.binarySearch(allPassages, passage) + 1; i < allPassages.size(); i++) {
+//            allPassages.get(i).positionProperty().setValue(passage.getPosition() + offset);
+//        }
+//    }
+    public void offsetPositions(int position, int offset) {
+        // wszystkie taki, których pozycja jest potem
+        for (var p : allPassages) {
+            if (p.getPosition() > position) {
+                p.positionProperty().setValue(p.getPosition() + offset);
+            }
         }
     }
 
@@ -97,17 +93,6 @@ public class Variation {
         addPassage(position, "");
     }
 
-    void bindObservableList(ObservableList<Passage> passages) {
-        for (Passage p : passages) {
-            p.textProperty().addListener((ob, ov, nv) -> this.modifySomeValue(this.getPassage(p.getPosition()), nv)
-//                this.modifySomeValue(
-//                        this.passages.get(Collections.binarySearch(passagePositions, p.getPosition())),
-//                        nv
-//                );
-            );
-        }
 
-
-    }
 }
 

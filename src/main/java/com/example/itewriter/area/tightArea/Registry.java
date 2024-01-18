@@ -6,16 +6,13 @@ import javafx.collections.ObservableList;
 import javafx.collections.ObservableSet;
 import javafx.scene.paint.Color;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class AreaRegistry {
+public class Registry {
     private static final Map<String, Field> colors =
             Stream.of(Color.class.getFields()).collect(Collectors.toMap(Field::getName, Function.identity()));
     private static final String filename = "/Users/Bruno/Desktop/Itewriter/Itewriter_2-0/initialTags";
@@ -23,43 +20,37 @@ public class AreaRegistry {
     // pytanie brzmi czy chcę manipulować tagami tylko poprzez rejestr, czy też na nich samych
     // najważniejsze są jednak zachowania tagu, czyli pola funkcjonalne
 
-    public final ObservableSet<Tag> availableTags = FXCollections.observableSet();
+    public final ObservableSet<Tag> allTags = FXCollections.observableSet();
 
     private void addTag(Color color) {
     }
 
     // jeśli tylko Registry by tworzyło tagi, to mógłbym podawać rejestr w otwarty sposób
-    public AreaRegistry() {
-        try {
-            for (var line : Files.readAllLines(Paths.get(filename))) {
-                var splitLine = List.of(line.split("--"));
-                var name = splitLine.get(0);
-                if (colors.containsKey(name)) {
-                    var tag = new Tag(name, (Color) colors.get(name).get(null));
-                    for (int i = 1, size = splitLine.size(); i < size; i++) {
-                        var words = splitLine.get(i);
-                        ObservableList<StringProperty> variation = FXCollections.observableArrayList();
-                        Stream.of(words.split(" "))
-                                .map(SimpleStringProperty::new)
-                                .forEachOrdered(variation::add);
-                        tag.variations.add(variation);
-//                        System.out.printf("TagVariation:%n%s%n", variation);
-                    }
-                }
-            }
-        } catch (IOException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+    public Registry() {
+//        makeShitFromFile();
     }
 
     /**
-     * tutaj nie powinno być obecnie wybranej wariacji oj nie!
-     * wariacja jest o tyle wybrana i aktualna o ile jej VIEW!
+     * każde zmienienie czegokolwiek powinno
+     * wywołać ten o to offset!
      */
+    public void bindBidirectional(Variation variation, ObservableList<Passage> passages) {
+
+    }
+    public void offsetAllTags(int position, int offset) {
+        for (var tag : allTags) {
+            tag.offsetAllVariations(position, offset);
+        }
+    }
     public class Tag {
+        public void offsetAllVariations(int position, int offset) {
+            for (var variation : allVariations) {
+                variation.offsetPositions(position, offset);
+            }
+        }
         private final StringProperty name = new SimpleStringProperty();
         private final ObjectProperty<Color> color = new SimpleObjectProperty<>();
-        public ObservableList<ObservableList<StringProperty>> variations = FXCollections.observableArrayList();
+        public ObservableList<Variation> allVariations = FXCollections.observableArrayList();
 //        private final IntegerProperty currentIndex = new SimpleIntegerProperty(-1);
 //        private final ObjectBinding<ObservableList<StringProperty>> activeVariation = Bindings.createObjectBinding(
 //                () -> variations.get(currentIndex.getValue()), variations, currentIndex
@@ -90,7 +81,7 @@ public class AreaRegistry {
         }
 
         public boolean setColor(Color color) {
-            if (availableTags.stream().map(Tag::getColor).noneMatch(color::equals)) {
+            if (allTags.stream().map(Tag::getColor).noneMatch(color::equals)) {
                 this.color.setValue(color);
                 return true;
             } else {
@@ -99,4 +90,28 @@ public class AreaRegistry {
         }
 
     }
+//    void makeShitFromFile() {
+//        try {
+//            for (var line : Files.readAllLines(Paths.get(filename))) {
+//                var splitLine = List.of(line.split("--"));
+//                var name = splitLine.get(0);
+//                if (colors.containsKey(name)) {
+//                    var tag = new Tag(name, (Color) colors.get(name).get(null));
+//                    for (int i = 1, size = splitLine.size(); i < size; i++) {
+//                        var words = splitLine.get(i);
+//                        // tworzenie nowej wariacji nie powinno tu być
+//                        ObservableList<StringProperty> variation = FXCollections.observableArrayList();
+//                        Stream.of(words.split(" "))
+//                                .map(SimpleStringProperty::new)
+//                                .forEachOrdered(variation::add);
+//
+//                        tag.variations.add(variation);
+////                        System.out.printf("TagVariation:%n%s%n", variation);
+//                    }
+//                }
+//            }
+//        } catch (IOException | IllegalAccessException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 }

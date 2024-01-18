@@ -1,10 +1,13 @@
 package com.example.itewriter.area.boxview;
 
-import com.example.itewriter.area.tightArea.AreaRegistry;
+import com.example.itewriter.area.tightArea.Passage;
+import com.example.itewriter.area.tightArea.Registry;
 import com.example.itewriter.area.tightArea.SequentialTagSelector;
 import com.example.itewriter.area.tightArea.VariationSelector;
 import javafx.beans.binding.Bindings;
-import javafx.scene.layout.HBox;
+import javafx.collections.ObservableList;
+
+import java.util.Collections;
 
 /**
  * moje pytanie brzmi:
@@ -35,21 +38,34 @@ public class BoxPaneSequentialController {
     jak i samym tagiem
     pytanie co jest potrzebne do jakiej zmiany, na których mi zależy oraz która klasa powinna tym się zajmować
      */
-    public BoxPaneSequentialController(BoxPaneView boxPaneView, AreaRegistry areaRegistry) {
+    public BoxPaneSequentialController(BoxPaneView boxPaneView, Registry registry) {
         // czy ta klasa powinna mieć properties'a, który byłby zbindowany
         this.boxPaneView = boxPaneView;
-        this.variationSelector = new VariationSelector(sequentialTagSelector = new SequentialTagSelector(areaRegistry));
-        this.variationSelector.getSelectedVariationObservable().addListener((ob, ov, nv) -> {
-            Bindings.unbindContent(boxPaneView.getActiveVariationProperty(), ov);
-            boxPaneView.getActiveVariationProperty().setAll(nv);
-            Bindings.bindContent(boxPaneView.getActiveVariationProperty(), nv);
-            /*
-            powyższy kod zakłada, że binduję boxPane z listą obserwowalnych stringów
-            żeby go naprawić, muszę sprawić, żeby VariationSelector faktycznie wybierał wariację
-             */
+        this.variationSelector = new VariationSelector(sequentialTagSelector = new SequentialTagSelector(registry));
+        this.variationSelector.getSelectedVariationObservable().addListener((variationProperty, oldVariation, newVariation) -> {
+//            Bindings.unbindContent(boxPaneView.getActiveVariationProperty(), ov);
+//            boxPaneView.getActiveVariationProperty().setAll(nv);
+//            Bindings.bindContent(boxPaneView.getActiveVariationProperty(), nv);
+
+//            nv.unbindObservableList(boxPaneView.getSimpleInternalModelProperty());
+//            boxPaneView.getSimpleInternalModelProperty().setAll(nv.getPassages());
+//            nv.bindObservableList(boxPaneView.getSimpleInternalModelProperty());
+            for (var textFieldPassage : boxPaneView.getSimpleInternalModelProperty()) {
+                var variationPassage = newVariation.getPassage(textFieldPassage.getPosition());
+                textFieldPassage.textProperty().unbind();
+                textFieldPassage.textProperty().setValue(variationPassage.textProperty().getValue());
+                textFieldPassage.textProperty().bind(variationPassage.textProperty());
+                textFieldPassage.textProperty().addListener((textProperty, oldText, newText) -> { // taki sam handler powinien być, kiedy dodawane są nowe elementy do wariacji
+                    registry.offsetAllTags(textFieldPassage.getPosition(), newText.length() - textFieldPassage.textProperty().getValue().length());
+                    newVariation.getPassage(textFieldPassage.getPosition()).textProperty().setValue(newText); // modyfikuje korespondującego indeksem taga
+                });
+            }
+            // oprócz tego trzeba samą w sobie zawartość boxPane związać -> i można przy dodawaniu elementów wywoływac powyższe!
+
 
         });
     }
+
     @Buttonize
     public boolean nextTag() {
         var currentIndex = sequentialTagSelector.currentIndex.getValue();
@@ -59,6 +75,7 @@ public class BoxPaneSequentialController {
         } else
             return false;
     }
+
     @Buttonize
     public boolean previousTag() {
         var currentIndex = sequentialTagSelector.currentIndex.getValue();
@@ -75,7 +92,7 @@ public class BoxPaneSequentialController {
         if (optionalTag.isPresent()) {
             final var tag = optionalTag.get();
             final var currentIndex = variationSelector.getIndex(tag);
-            if (currentIndex < tag.variations.size() - 1) {
+            if (currentIndex < tag.allVariations.size() - 1) {
                 variationSelector.setIndex(tag, currentIndex + 1);
                 return true;
             }

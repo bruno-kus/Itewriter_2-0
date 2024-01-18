@@ -5,46 +5,42 @@ import javafx.beans.property.StringProperty;
 import org.fxmisc.richtext.model.ReadOnlyStyledDocument;
 import org.reactfx.util.Either;
 
-import java.util.TreeSet;
-
 import static com.example.itewriter.area.tightArea.MyArea.EITHER_OPS;
 
 
 public class AreaController {
     MyArea area;
+    /**
+     * może być zarówno podane przez konstruktor, jeśli chcę synchronizacji jak i utworzone nowe
+     */
     public final SequentialTagSelector sequentialTagSelector;
 
-    public AreaController(MyArea area, SequentialTagSelector sequentialTagSelector) {
+    public AreaController(MyArea area, Registry registry, SequentialTagSelector sequentialTagSelector) {
         this.area = area;
         this.sequentialTagSelector = sequentialTagSelector;
 
+        this.area.setOnKeyPressed(key -> {
+            registry.offsetAllTags(area.getCaretPosition(), key.getText().length());
+            /*
+            mega ważne! zmiany w pasażach powinny dotyczyć tylko tej samej wariacji
+            zmiany w tekście nienależącym do nikogo powinny być we wszystkich wprowadzone
+            ale jest coś takiego, że z perspektywy wariacji zmiana w innej wariacji
+            niczym się nie różni od zmiany w czystym tekście!
+             */
+        });
+
     }
 
-    {
-        area.setOnKeyPressed(key -> {
-            String keyText = key.getText();
-            if (area.isCaretAtSegment()) {
-                StringProperty textProperty = area.getSegmentAtCursor().textProperty();
-                textProperty.setValue(new StringBuilder(textProperty.getValue()).insert(getPositionInSegmentAtCursor(), keyText));
-            }
-            // to api powinno być zdefiniowane wewnątrz samej wariacji
-            //
-            for (var t : tags) {
-                for (var p : getSelectedVariation.tailSet(area.getCaretPosition())) {
-                    var pos = p.positionProperty();
-                    pos.setValue(pos.getValue + keyText.length());
-                }
-            }
-        });
-    }
-    public void writeMySegment(AreaRegistry.Tag tag) {
+
+    public void writeMySegment(Registry.Tag tag) {
         area.setOnKeyPressed(k -> insertMySegment(area.getCaretPosition(), tag));
     }
 
-    public void insertMySegment(int position, AreaRegistry.Tag tag) {
+    public void insertMySegment(int position, Registry.Tag tag) {
         replaceWithMySegment(position, position, tag);
     }
-    private void replaceSelectionWithMySegment(AreaRegistry.Tag tag) {
+
+    private void replaceSelectionWithMySegment(Registry.Tag tag) {
         System.out.println("MyArea::replaceSelectionWithMySegment");
 
         /*
@@ -67,7 +63,7 @@ public class AreaController {
         }
     }
 
-    public void replaceWithMySegment(int start, int end, AreaRegistry.Tag tag) {
+    public void replaceWithMySegment(int start, int end, Registry.Tag tag) {
         // tutaj uwierzytelniam
         if (sequentialTagSelector.tags.contains(tag))
             area.replace(start, end, ReadOnlyStyledDocument.fromSegment(
