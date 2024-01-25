@@ -1,7 +1,7 @@
 package com.example.itewriter.area.boxview;
 
 import com.example.itewriter.area.tightArea.Registry;
-import com.example.itewriter.area.tightArea.SequentialTagSelector;
+import com.example.itewriter.area.tightArea.TagSelector;
 import com.example.itewriter.area.tightArea.VariationSelector;
 
 /**
@@ -23,7 +23,7 @@ public class BoxPaneSequentialController {
 
     public final BoxPaneView boxPaneView;
     private final VariationSelector variationSelector;
-    private final SequentialTagSelector sequentialTagSelector;
+    private final TagSelector tagSelector;
 
     /*
     tutaj powinien być zarówno API do next tag, jak i do next variation
@@ -36,7 +36,7 @@ public class BoxPaneSequentialController {
     public BoxPaneSequentialController(BoxPaneView boxPaneView, Registry registry) {
         // czy ta klasa powinna mieć properties'a, który byłby zbindowany
         this.boxPaneView = boxPaneView;
-        this.variationSelector = new VariationSelector(sequentialTagSelector = new SequentialTagSelector(registry));
+        this.variationSelector = new VariationSelector(tagSelector = new TagSelector(registry));
         this.variationSelector.getSelectedVariationObservable().addListener((variationProperty, oldVariation, newVariation) -> {
             boxPaneView.displayedPassages.setValue(registry.viewOf(newVariation));
 
@@ -59,9 +59,9 @@ public class BoxPaneSequentialController {
 
     @Buttonize
     public boolean nextTag() {
-        var currentIndex = sequentialTagSelector.currentIndex.getValue();
-        if (currentIndex < sequentialTagSelector.tags.size() - 1) {
-            sequentialTagSelector.setIndex(currentIndex + 1);
+        var currentIndex = tagSelector.currentIndex.getValue();
+        if (currentIndex < tagSelector.tags.size() - 1) {
+            tagSelector.setIndex(currentIndex + 1);
             return true;
         } else
             return false;
@@ -69,9 +69,9 @@ public class BoxPaneSequentialController {
 
     @Buttonize
     public boolean previousTag() {
-        var currentIndex = sequentialTagSelector.currentIndex.getValue();
+        var currentIndex = tagSelector.currentIndex.getValue();
         if (currentIndex > 0) {
-            sequentialTagSelector.setIndex(currentIndex - 1);
+            tagSelector.setIndex(currentIndex - 1);
             return true;
         } else
             return false;
@@ -79,7 +79,7 @@ public class BoxPaneSequentialController {
 
     @Buttonize
     public boolean nextVariation() {
-        final var optionalTag = sequentialTagSelector.getSelectedTag();
+        final var optionalTag = tagSelector.getSelectedTag();
         if (optionalTag.isPresent()) {
             final var tag = optionalTag.get();
             final var currentIndex = variationSelector.getIndex(tag);
@@ -93,7 +93,7 @@ public class BoxPaneSequentialController {
 
     @Buttonize
     public boolean previousVariation() {
-        final var optionalTag = sequentialTagSelector.getSelectedTag();
+        final var optionalTag = tagSelector.getSelectedTag();
         if (optionalTag.isPresent()) {
             final var tag = optionalTag.get();
             final var currentIndex = variationSelector.getIndex(tag);

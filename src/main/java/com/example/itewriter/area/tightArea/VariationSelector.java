@@ -22,7 +22,7 @@ public class VariationSelector {
     private final ObservableValue<Variation> selectedVariation;
 
 
-    public VariationSelector(SequentialTagSelector tagSelector) {
+    public VariationSelector(TagSelector tagSelector) {
         selectedVariation =
                 Bindings.createObjectBinding(
                         () -> {

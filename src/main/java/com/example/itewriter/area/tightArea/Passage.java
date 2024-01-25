@@ -5,9 +5,9 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
-public class Passage implements Comparable<Passage>{
-    public Passage(int position, String text) {
-        this.position.setValue(position);
+public class Passage /*implements Comparable<Passage>*/{
+    public Passage(/*int position,*/ String text) {
+//        this.position.setValue(position);
         this.text.setValue(text);
     }
 
@@ -38,21 +38,21 @@ public class Passage implements Comparable<Passage>{
         // jeden pasaż nie jest atomiczny!
     }
 
-    @Override
-    public int compareTo(Passage o) {
-        return 0;
-    }
-
-    IntegerProperty position = new SimpleIntegerProperty();
-
-
-    public int getPosition() {
-        return position.get();
-    }
-
-    public IntegerProperty positionProperty() {
-        return position;
-    }
+//    @Override
+//    public int compareTo(Passage o) {
+//        return 0;
+//    }
+//
+//    IntegerProperty position = new SimpleIntegerProperty();
+//
+//
+//    public int getPosition() {
+//        return position.get();
+//    }
+//
+//    public IntegerProperty positionProperty() {
+//        return position;
+//    }
 
 
 }

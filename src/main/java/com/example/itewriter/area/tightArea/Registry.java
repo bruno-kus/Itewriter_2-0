@@ -30,13 +30,13 @@ public class Registry {
 //        makeShitFromFile();
     }
 
-    /**
-     * każde zmienienie czegokolwiek powinno
-     * wywołać ten o to offset!
-     */
-    public void bindBidirectional(Variation variation, ObservableList<Passage> passages) {
-
-    }
+//    /**
+//     * każde zmienienie czegokolwiek powinno
+//     * wywołać ten o to offset!
+//     */
+//    public void bindBidirectional(Variation variation, ObservableList<Passage> passages) {
+//
+//    }
     public ObservableList<Passage> viewOf(Variation variation) {
         // sprawdzić czy ta instancja wariacji należy do tego modelu
         // to może i lepiej zrobić, variation::viewOf -> może to i by jednak miało sens, żeby każda wariacja
@@ -59,7 +59,11 @@ public class Registry {
         private final StringProperty name = new SimpleStringProperty();
         private final ObjectProperty<Color> color = new SimpleObjectProperty<>();
         public ObservableList<Variation> allVariations = FXCollections.observableArrayList();
-//        private final IntegerProperty currentIndex = new SimpleIntegerProperty(-1);
+
+        public ObservableList<Variation> getAllVariations() {
+            return allVariations;
+        }
+        //        private final IntegerProperty currentIndex = new SimpleIntegerProperty(-1);
 //        private final ObjectBinding<ObservableList<StringProperty>> activeVariation = Bindings.createObjectBinding(
 //                () -> variations.get(currentIndex.getValue()), variations, currentIndex
 //            /*

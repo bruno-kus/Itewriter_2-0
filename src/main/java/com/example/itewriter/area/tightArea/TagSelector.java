@@ -12,13 +12,14 @@ import java.util.Optional;
 /**
  * to też powinno pozwolić ustawiać index tak jak mi się podoba i jak coś to kontroler waliduje indexowanie
  */
-public class SequentialTagSelector {
+public class TagSelector {
     /**
      * tags jest listą w przeciwieństwie do zbioru w Registry
-     * każdy Selector może mieć inną strukturę danych
+     * każdy Selector może mieć inną strukturę danych, choćby i być grafem jak MLL
      */
     public final ObservableList<Registry.Tag> tags = FXCollections.observableArrayList();
     public final IntegerProperty currentIndex = new SimpleIntegerProperty(-1);
+
     private final ObservableValue<Registry.Tag> selectedTag = Bindings.createObjectBinding(
             () -> {
                 if (currentIndex.getValue() > 0 && currentIndex.getValue() < tags.size())
@@ -35,7 +36,7 @@ public class SequentialTagSelector {
 //            },
 //
 //    );
-    public SequentialTagSelector(Registry registry) {
+    public TagSelector(Registry registry) {
         registry.allTags.addListener(
                 (SetChangeListener.Change<? extends Registry.Tag> change) -> {
                     if (change.wasAdded()) tags.add(change.getElementAdded());
