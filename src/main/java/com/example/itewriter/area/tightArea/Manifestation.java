@@ -1,28 +1,25 @@
 package com.example.itewriter.area.tightArea;
 
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class Manifestation {
     // to by mogła być w ogóle nawet lista, nie mapa...
-    final List<Integer> passagePositions = new ArrayList<>();
+    final List<Integer> passagePositions = new ArrayList<>(); // w Scali bym przypisywał nową listę za każdym razem?
 
-    private final ObservableValue<Variation> variation;
+    private final ObservableValue<SimpleVariation> variation;
 
 
-    public Variation getVariation() {
+    public SimpleVariation getVariation() {
         return variation.getValue();
     }
 
-    public ObservableValue<Variation> variationObservable() {
+    public ObservableValue<SimpleVariation> variationObservable() {
         return variation;
     }
-    public Manifestation(ObservableValue<Variation> variationObservable) {
+    public Manifestation(ObservableValue<SimpleVariation> variationObservable) {
         this.variation = variationObservable;
     }
 

@@ -3,19 +3,20 @@ package com.example.itewriter.area.tightArea;
 import javafx.beans.binding.StringExpression;
 import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.collections.ObservableMap;
+
 import java.util.*;
 
-public class Variation {
+public class SimpleVariation {
     /*
     konieczna jest kompozycja nad dziedziczeniem bo nigdy nie chcę, żeby ktoś na wariacji użył setAll!
      */
     public final ObservableList<StringProperty> allPassages = new SimpleListProperty<>();
     public List<Integer> getLengths() {
         return allPassages.stream().map(StringExpression::getValue).map(String::length).toList();
+    }
+    public List<String> getTexts() {
+        return allPassages.stream().map(StringExpression::getValue).toList();
     }
 
 //    {

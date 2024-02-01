@@ -8,13 +8,13 @@ import javafx.collections.MapChangeListener;
 import java.util.List;
 
 public class MapperSelector {
-    private final ObservableValue <Variation> selectedVariation;
+    private final ObservableValue <SimpleVariation> selectedVariation;
 
-    public Variation getSelectedVariation() {
+    public SimpleVariation getSelectedVariation() {
         return selectedVariation.getValue();
     }
 
-    public ObservableValue<Variation> selectedVariationObservable() {
+    public ObservableValue<SimpleVariation> selectedVariationObservable() {
         return selectedVariation;
     }
     /*
@@ -26,7 +26,7 @@ public class MapperSelector {
         selectedVariation = Bindings.createObjectBinding(
                 () -> {
                     var tag = list.getValue().get(currentIndex.getValue());
-                    return tag.allVariations.get(tagIndexer.getIndex(tag));
+                    return tag.allSimpleVariations.get(tagIndexer.getIndex(tag));
                 },
                 tagIndexer.tagIndices, currentIndex
         );

@@ -19,7 +19,7 @@ public class VariationSelector {
     public ObservableMap<Registry.Tag, Integer> currentIndices = FXCollections.observableHashMap();
 
     //    private final ObservableValue<ObservableList<StringProperty>> selectedVariation;
-    private final ObservableValue<Variation> selectedVariation;
+    private final ObservableValue<SimpleVariation> selectedVariation;
 
 
     public VariationSelector(TagSelector tagSelector) {
@@ -29,7 +29,7 @@ public class VariationSelector {
                             final var optional = tagSelector.getSelectedTag();
                             if (optional.isPresent()) {
                                 final var tag = optional.get();
-                                return tag.allVariations.get(currentIndices.get(tag));
+                                return tag.allSimpleVariations.get(currentIndices.get(tag));
                             } else
                                 return null;
                         },
@@ -37,16 +37,16 @@ public class VariationSelector {
                 );
     }
 
-    public Optional<Variation> getSelectedVariation() {
+    public Optional<SimpleVariation> getSelectedVariation() {
         return Optional.ofNullable(selectedVariation.getValue());
     }
 
-    public ObservableValue<Variation> getSelectedVariationObservable() {
+    public ObservableValue<SimpleVariation> getSelectedVariationObservable() {
         return selectedVariation;
     }
 
     public void setIndex(Registry.Tag tag, Integer index) {
-        if (index >= 0 && index < tag.allVariations.size()) currentIndices.put(tag, index);
+        if (index >= 0 && index < tag.allSimpleVariations.size()) currentIndices.put(tag, index);
         else throw new IllegalArgumentException();
     }
 

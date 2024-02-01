@@ -6,7 +6,7 @@ import javafx.beans.value.ObservableValue;
 public class SimpleVariationSelector {
     final TagIndexer tagIndexer;
     final ObservableValue<Registry.Tag> selectedTag;
-    final ObservableValue<Variation> selectedVariation;
+    final ObservableValue<SimpleVariation> selectedVariation;
 
     SimpleVariationSelector(TagIndexer tagIndexer, ObservableValue<Registry.Tag> selectedTag) {
         this.tagIndexer = tagIndexer;
@@ -17,11 +17,11 @@ public class SimpleVariationSelector {
         );
     }
 
-    public ObservableValue<Variation> selectedVariationObservable() {
+    public ObservableValue<SimpleVariation> selectedVariationObservable() {
         return selectedVariation;
     }
 
-    public ObservableValue<Variation> selectedVariationProperty() {
+    public ObservableValue<SimpleVariation> selectedVariationProperty() {
         return selectedVariation;
     }
 

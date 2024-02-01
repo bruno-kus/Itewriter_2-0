@@ -1,9 +1,12 @@
 package com.example.itewriter.area.tightArea;
 
 import com.example.itewriter.area.util.MyRange;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
+import javafx.collections.SetChangeListener;
 import javafx.util.Pair;
 import org.fxmisc.richtext.model.ReadOnlyStyledDocument;
+import org.fxmisc.richtext.model.StyleSpans;
 import org.reactfx.util.Either;
 
 import java.util.*;
@@ -12,26 +15,71 @@ import static com.example.itewriter.area.tightArea.MyArea.EITHER_OPS;
 
 public class AreaController {
     MyArea area;
+    {
+//        area.getStyleSpans()
+        StyleSpans
+    }
+
     private final ManifestationModel manifestationModel;
     Property<Registry.Tag> selectedTagProperty;
     public final SimpleVariationSelector simpleVariationSelector;
+
     public AreaController(MyArea area, Registry registry) {
         this.area = area;
         final var tagIndexer = new TagIndexer(registry);
-        manifestationModel = new ManifestationModel(registry, tagIndexer);
+        manifestationModel = new ManifestationModel(tagIndexer, this);
         simpleVariationSelector = new SimpleVariationSelector(tagIndexer, selectedTagProperty);
 
-
-    }
-
-    private void putToManifestVariations(Registry.Tag tag) {
-        var manifestVariation = new SimpleObjectProperty<>(); // uzależnić od Variation selectora jakiegoś :)
-        manifestVariation.addListener((ob, ov, nv) -> {
-//            area.createMultiChange() // TODO
-            area.createMultiChange().commit();
+        registry.allTags.addListener((SetChangeListener.Change<? extends Registry.Tag> change) -> {
+            if (change.wasAdded()) {
+                final var tag = change.getElementAdded();
+                final var manifestation = new Manifestation(
+                        Bindings.createObjectBinding(
+                                () -> tag.getAllVariations().get(tagIndexer.getTagIndices().get(tag)),
+                                tagIndexer.getTagIndices())
+                );
+                manifestationModel.observableManifestations.put(tag, manifestation);
+            } else if (change.wasRemoved()) {
+                manifestationModel.observableManifestations.remove(change.getElementRemoved());
+            }
         });
-        manifestVariations.put(tag, manifestVariation);
+        area.setOnKeyPressed(e -> {
+            final var carPos = area.getCaretPosition();
+            final var allPos = manifestationModel.getAllPositions();
+            final var i = -(Collections.binarySearch(allPos, carPos) + 1);
+            // znowu potrzebuję czegoś takiego jak taggedposition!
+            // w ogóle mógłbym tutaj mieć listę manifestacji
+            // albo może nawet snapshotów manifestacji!
+//            if (carPos > allPos.get(i) && carPos < allPos.get(i)) +
+
+            l1:
+            for (final var entry : manifestationModel.observableManifestations.entrySet()) {
+                final var passPos = entry.getValue().getPassagePositions();
+                for (final var pos : passPos) {
+                    if (pos == i) {
+                        final var innerIndex = Collections.binarySearch(passPos, i);
+                        final var start = allPos.get(i);
+                        final var end = start + entry.getValue().getVariation().getTexts().get(innerIndex).length();
+                        final var property = entry.getValue().getVariation().allPassages.get(innerIndex);
+                        if () {
+                            property.setValue(new StringBuilder(property.getValue())
+                                    .insert(carPos - start, e.getText()).toString());
+                        }
+                        break l1;
+                    }
+                }
+            }
+            /*
+            zmapować entry set manifestacji do czegoś jak
+            pozycja -> tag, Variation
+            czy manifestacja powinna mieć wewnątrz siebie taga
+            mogę zamiast tego operować na entrisach!
+
+            pozycję znalezioną w zgromadzeniu łatwo też znaleźć w konkretnej manifestacji (taki sam binSearch)
+             */
+        });
     }
+
 
     /**
      * jak na razie to podoba mi się umiejscowienie tej metody w kontrolerze
@@ -40,30 +88,6 @@ public class AreaController {
      * kontroler aktualizuje też pozycje
      * tylko, co z tego, że ja se zrobię multiChanges skoro nie mam tych multi changes odbitych...
      */
-    public static void multiChange(
-            MyArea area, List<Pair<MyRange, String>> oldValues, List<Pair<MyRange, String>> newValues) {
-        if (oldValues.size() != newValues.size()) throw new IllegalArgumentException();
-        var builder = area.createMultiChange();
-        for (int i = 0; i < oldValues.size(); i++) {
-            var oldRange = oldValues.get(i).getKey();
-            var newText = newValues.get(i).getValue();
-            builder.replaceText(oldRange.start, oldRange.end, newText);
-        }
-        /*
-        commit wykonuje zmiany po sobie tak zupełnie zwyczajnie
-        i jest tak jak myślę, że wywoływanie replace dodaje polecenie na absolutnych wartościach
-        do listy, która niestety jest prywatna
-        najlepszy sposób to samemu zaimplementować mój replacer
-        przy okazji od razu będzie aktualizował pozycje
-        aczkolwiek
-         */
-        builder.commit();
-    }
-
-
-
-
-
 
 
     public void writeMySegment(Registry.Tag tag) {

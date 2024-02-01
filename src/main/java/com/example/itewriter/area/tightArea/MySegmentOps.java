@@ -8,6 +8,7 @@ import java.util.Optional;
 public class MySegmentOps <S> extends SegmentOpsBase<MySegment, S> {
     // mogę mieć nawet osobną klasę dla pustego segmentu, która implementuje to co pełny
     // no tak, typ strefy może być abstrakcyjny!
+    // kurwa max!
     public MySegmentOps() {
         super(MySegment.empty());
     }

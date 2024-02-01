@@ -1,5 +1,7 @@
 package com.example.itewriter.area.tightArea;
 
+import javafx.scene.control.ListCell;
+import javafx.scene.control.skin.VirtualFlow;
 import org.fxmisc.richtext.*;
 import org.fxmisc.richtext.model.*;
 
@@ -8,6 +10,8 @@ import org.reactfx.util.*;
 import java.util.*;
 
 public class MyArea extends GenericStyledArea<Void, Either<String, MySegment>, String> {
+    {
+    }
 //    private final Registry registry = new Registry();
     private static final TextOps<String, String> STYLED_TEXT_OPS = SegmentOps.styledTextOps();
     private static final MySegmentOps<String> MY_OPS = new MySegmentOps<>();

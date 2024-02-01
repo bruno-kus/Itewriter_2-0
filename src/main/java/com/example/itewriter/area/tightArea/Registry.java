@@ -37,7 +37,7 @@ public class Registry {
 //    public void bindBidirectional(Variation variation, ObservableList<Passage> passages) {
 //
 //    }
-    public ObservableList<Passage> viewOf(Variation variation) {
+    public ObservableList<Passage> viewOf(SimpleVariation simpleVariation) {
         // sprawdzić czy ta instancja wariacji należy do tego modelu
         // to może i lepiej zrobić, variation::viewOf -> może to i by jednak miało sens, żeby każda wariacja
         // miała dostęp do modelu
@@ -52,16 +52,16 @@ public class Registry {
     }
     public class Tag {
         public void offsetAllVariations(int position, int offset) {
-            for (var variation : allVariations) {
+            for (var variation : allSimpleVariations) {
                 variation.offsetPositions(position, offset);
             }
         }
         private final StringProperty name = new SimpleStringProperty();
         private final ObjectProperty<Color> color = new SimpleObjectProperty<>();
-        public ObservableList<Variation> allVariations = FXCollections.observableArrayList();
+        public ObservableList<SimpleVariation> allSimpleVariations = FXCollections.observableArrayList();
 
-        public ObservableList<Variation> getAllVariations() {
-            return allVariations;
+        public ObservableList<SimpleVariation> getAllVariations() {
+            return allSimpleVariations;
         }
         //        private final IntegerProperty currentIndex = new SimpleIntegerProperty(-1);
 //        private final ObjectBinding<ObservableList<StringProperty>> activeVariation = Bindings.createObjectBinding(
