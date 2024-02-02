@@ -83,7 +83,7 @@ public class BoxPaneSequentialController {
         if (optionalTag.isPresent()) {
             final var tag = optionalTag.get();
             final var currentIndex = variationSelector.getIndex(tag);
-            if (currentIndex < tag.allSimpleVariations.size() - 1) {
+            if (currentIndex < tag.getAllSimpleVariationsProperty().size() - 1) {
                 variationSelector.setIndex(tag, currentIndex + 1);
                 return true;
             }

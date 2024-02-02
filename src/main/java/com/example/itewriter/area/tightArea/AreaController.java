@@ -1,12 +1,9 @@
 package com.example.itewriter.area.tightArea;
 
-import com.example.itewriter.area.util.MyRange;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
 import javafx.collections.SetChangeListener;
-import javafx.util.Pair;
 import org.fxmisc.richtext.model.ReadOnlyStyledDocument;
-import org.fxmisc.richtext.model.StyleSpans;
 import org.reactfx.util.Either;
 
 import java.util.*;
@@ -15,10 +12,7 @@ import static com.example.itewriter.area.tightArea.MyArea.EITHER_OPS;
 
 public class AreaController {
     MyArea area;
-    {
-//        area.getStyleSpans()
-        StyleSpans
-    }
+
 
     private final ManifestationModel manifestationModel;
     Property<Registry.Tag> selectedTagProperty;
@@ -35,7 +29,7 @@ public class AreaController {
                 final var tag = change.getElementAdded();
                 final var manifestation = new Manifestation(
                         Bindings.createObjectBinding(
-                                () -> tag.getAllVariations().get(tagIndexer.getTagIndices().get(tag)),
+                                () -> tag.getAllSimpleVariationsProperty().get(tagIndexer.getTagIndices().get(tag)),
                                 tagIndexer.getTagIndices())
                 );
                 manifestationModel.observableManifestations.put(tag, manifestation);

@@ -12,7 +12,7 @@ public class SimpleVariationSelector {
         this.tagIndexer = tagIndexer;
         this.selectedTag = selectedTag;
         selectedVariation = Bindings.createObjectBinding(
-                () -> selectedTag.getValue().getAllVariations().get(tagIndexer.getIndex(selectedTag.getValue())),
+                () -> selectedTag.getValue().getAllSimpleVariationsProperty().get(tagIndexer.getIndex(selectedTag.getValue())),
                 selectedTag, tagIndexer.getTagIndices()
         );
     }
@@ -28,7 +28,7 @@ public class SimpleVariationSelector {
     public boolean nextVariation() {
         final var tag = selectedTag.getValue();
         final var tagIndex = tagIndexer.getIndex(tag);
-        if (tagIndex < tag.getAllVariations().size() - 1) {
+        if (tagIndex < tag.getAllSimpleVariationsProperty().size() - 1) {
             tagIndexer.setIndex(tag, tagIndex + 1);
             return true;
         } else

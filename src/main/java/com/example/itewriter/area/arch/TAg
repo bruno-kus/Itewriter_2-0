@@ -1,0 +1,24 @@
+    //    void makeShitFromFile() {
+//        try {
+//            for (var line : Files.readAllLines(Paths.get(filename))) {
+//                var splitLine = List.of(line.split("--"));
+//                var name = splitLine.get(0);
+//                if (colors.containsKey(name)) {
+//                    var tag = new Tag(name, (Color) colors.get(name).get(null));
+//                    for (int i = 1, size = splitLine.size(); i < size; i++) {
+//                        var words = splitLine.get(i);
+//                        // tworzenie nowej wariacji nie powinno tu być
+//                        ObservableList<StringProperty> variation = FXCollections.observableArrayList();
+//                        Stream.of(words.split(" "))
+//                                .map(SimpleStringProperty::new)
+//                                .forEachOrdered(variation::add);
+//
+//                        tag.variations.add(variation);
+////                        System.out.printf("TagVariation:%n%s%n", variation);
+//                    }
+//                }
+//            }
+//        } catch (IOException | IllegalAccessException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }

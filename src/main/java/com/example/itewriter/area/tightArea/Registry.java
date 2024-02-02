@@ -30,7 +30,7 @@ public class Registry {
 //        makeShitFromFile();
     }
 
-//    /**
+    //    /**
 //     * każde zmienienie czegokolwiek powinno
 //     * wywołać ten o to offset!
 //     */
@@ -45,39 +45,18 @@ public class Registry {
         // i czy to w ogóle powinny być pasaże czy tylko Stringi
         // najważniejsze teraz jest tak czy siak aktualizowanie pozycji
     }
-    public void offsetAllTags(int position, int offset) {
-        for (var tag : allTags) {
-            tag.offsetAllVariations(position, offset);
-        }
-    }
+
+
+
     public class Tag {
-        public void offsetAllVariations(int position, int offset) {
-            for (var variation : allSimpleVariations) {
-                variation.offsetPositions(position, offset);
-            }
-        }
+
         private final StringProperty name = new SimpleStringProperty();
         private final ObjectProperty<Color> color = new SimpleObjectProperty<>();
-        public ObservableList<SimpleVariation> allSimpleVariations = FXCollections.observableArrayList();
+        private final ObservableList<SimpleVariation> allSimpleVariations = FXCollections.observableArrayList();
 
-        public ObservableList<SimpleVariation> getAllVariations() {
+        public ObservableList<SimpleVariation> getAllSimpleVariationsProperty() {
             return allSimpleVariations;
         }
-        //        private final IntegerProperty currentIndex = new SimpleIntegerProperty(-1);
-//        private final ObjectBinding<ObservableList<StringProperty>> activeVariation = Bindings.createObjectBinding(
-//                () -> variations.get(currentIndex.getValue()), variations, currentIndex
-//            /*
-//            czy wystarczyłby sam indeks?
-//             */
-//        );
-//
-//        public ObservableList<StringProperty> getActiveVariation() {
-//            return activeVariation.get();
-//        }
-//
-//        public ObjectBinding<ObservableList<StringProperty>> activeVariationProperty() {
-//            return activeVariation;
-//        }
 
         public ObjectProperty<Color> colorProperty() {
             return color;
@@ -102,28 +81,28 @@ public class Registry {
         }
 
     }
-//    void makeShitFromFile() {
-//        try {
-//            for (var line : Files.readAllLines(Paths.get(filename))) {
-//                var splitLine = List.of(line.split("--"));
-//                var name = splitLine.get(0);
-//                if (colors.containsKey(name)) {
-//                    var tag = new Tag(name, (Color) colors.get(name).get(null));
-//                    for (int i = 1, size = splitLine.size(); i < size; i++) {
-//                        var words = splitLine.get(i);
-//                        // tworzenie nowej wariacji nie powinno tu być
-//                        ObservableList<StringProperty> variation = FXCollections.observableArrayList();
-//                        Stream.of(words.split(" "))
-//                                .map(SimpleStringProperty::new)
-//                                .forEachOrdered(variation::add);
-//
-//                        tag.variations.add(variation);
-////                        System.out.printf("TagVariation:%n%s%n", variation);
-//                    }
-//                }
-//            }
-//        } catch (IOException | IllegalAccessException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
+    class CompositeTag {
+
+    }
+    abstract class AbstractTag {
+
+    }
+
+    class Composer {
+        /*
+        czy to oznacza, że same w sobie tagi
+        powinny być abstrakcyjne?
+         */
+        void compose(Tag t1, Tag t2) {
+            if (!(allTags.contains(t1) && allTags.contains(t2))) {
+                throw new IllegalArgumentException();
+            }
+            var composit = new Tag("composed", Color.WHITE);
+            // więc albo komponowany tag musi mieć odniesienia do
+            // źródłowych tagów!
+            composit.allSimpleVariations.add()
+        }
+
+
+    }
 }
