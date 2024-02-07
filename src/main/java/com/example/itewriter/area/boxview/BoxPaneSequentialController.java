@@ -35,6 +35,9 @@ public class BoxPaneSequentialController {
      */
     public BoxPaneSequentialController(BoxPaneView boxPaneView, Registry registry) {
         // czy ta klasa powinna mieć properties'a, który byłby zbindowany
+        int bop = 8;
+        bop++;
+        System.out.println(bop);
         this.boxPaneView = boxPaneView;
         this.variationSelector = new VariationSelector(tagSelector = new TagSelector(registry));
         this.variationSelector.getSelectedVariationObservable().addListener((variationProperty, oldVariation, newVariation) -> {
@@ -83,7 +86,7 @@ public class BoxPaneSequentialController {
         if (optionalTag.isPresent()) {
             final var tag = optionalTag.get();
             final var currentIndex = variationSelector.getIndex(tag);
-            if (currentIndex < tag.getAllSimpleVariationsProperty().size() - 1) {
+            if (currentIndex < tag.getVariationsProperty().size() - 1) {
                 variationSelector.setIndex(tag, currentIndex + 1);
                 return true;
             }

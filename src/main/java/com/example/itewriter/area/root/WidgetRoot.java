@@ -47,7 +47,7 @@ public class WidgetRoot extends VBox {
         @Widget
         public Node color() {
             var colorBar = new HBox();
-            registry.allTags.stream()
+            registry.allSimpleTags.stream()
                     .map(tag -> new Button(tag.getColor().toString()))
                     .forEachOrdered(colorBar.getChildren()::add);
             return colorBar;

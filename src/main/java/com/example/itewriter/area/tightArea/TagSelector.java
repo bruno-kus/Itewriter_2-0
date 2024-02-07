@@ -37,7 +37,7 @@ public class TagSelector {
 //
 //    );
     public TagSelector(Registry registry) {
-        registry.allTags.addListener(
+        registry.allSimpleTags.addListener(
                 (SetChangeListener.Change<? extends Registry.Tag> change) -> {
                     if (change.wasAdded()) tags.add(change.getElementAdded());
                     else if (change.wasRemoved()) tags.add(change.getElementRemoved());

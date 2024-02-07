@@ -29,7 +29,7 @@ public class VariationSelector {
                             final var optional = tagSelector.getSelectedTag();
                             if (optional.isPresent()) {
                                 final var tag = optional.get();
-                                return tag.getAllSimpleVariationsProperty().get(currentIndices.get(tag));
+                                return tag.getVariationsProperty().get(currentIndices.get(tag));
                             } else
                                 return null;
                         },
@@ -46,7 +46,7 @@ public class VariationSelector {
     }
 
     public void setIndex(Registry.Tag tag, Integer index) {
-        if (index >= 0 && index < tag.getAllSimpleVariationsProperty().size()) currentIndices.put(tag, index);
+        if (index >= 0 && index < tag.getVariationsProperty().size()) currentIndices.put(tag, index);
         else throw new IllegalArgumentException();
     }
 

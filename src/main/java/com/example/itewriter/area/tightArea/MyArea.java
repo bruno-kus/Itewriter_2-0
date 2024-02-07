@@ -1,7 +1,5 @@
 package com.example.itewriter.area.tightArea;
 
-import javafx.scene.control.ListCell;
-import javafx.scene.control.skin.VirtualFlow;
 import org.fxmisc.richtext.*;
 import org.fxmisc.richtext.model.*;
 

@@ -1,5 +1,6 @@
 package com.example.itewriter.area.tightArea;
 
+import com.example.itewriter.area.tightArea.preview.CompositeManifestation;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -47,14 +48,24 @@ public class Registry {
     }
 
 
-
     public class Tag {
+        ObservableSet<Tag> components = null;
+
+        // czy to powinno być leniwie alokowane? chyba tak, ponieważ tag bazowy nie może stać się kompozytem
+        private Optional<Collection<Tag>> getComponents() {
+            return Optional.ofNullable(components);
+        }
+
+        public boolean isComposite() {
+            return components != null;
+        }
+
 
         private final StringProperty name = new SimpleStringProperty();
         private final ObjectProperty<Color> color = new SimpleObjectProperty<>();
         private final ObservableList<SimpleVariation> allSimpleVariations = FXCollections.observableArrayList();
 
-        public ObservableList<SimpleVariation> getAllSimpleVariationsProperty() {
+        public ObservableList<SimpleVariation> getVariationsProperty() {
             return allSimpleVariations;
         }
 
@@ -66,11 +77,20 @@ public class Registry {
             return color.get();
         }
 
+
         public Tag(String name, Color color) {
             this.name.setValue(name);
             this.color.setValue(color);
         }
 
+        public Tag(String name, Color color, Collection<Tag> components) {
+            this(name, color);
+            this.components = FXCollections.observableSet(Set.copyOf(components));
+        }
+
+        public int getNumberOfPassages() {
+            return allSimpleVariations.get(0).passages.size();
+        }
         public boolean setColor(Color color) {
             if (allTags.stream().map(Tag::getColor).noneMatch(color::equals)) {
                 this.color.setValue(color);
@@ -81,28 +101,34 @@ public class Registry {
         }
 
     }
-    class CompositeTag {
-
-    }
-    abstract class AbstractTag {
-
-    }
 
     class Composer {
         /*
         czy to oznacza, że same w sobie tagi
         powinny być abstrakcyjne?
          */
-        void compose(Tag t1, Tag t2) {
-            if (!(allTags.contains(t1) && allTags.contains(t2))) {
+        void compose(Tag t1, Tag t2, ManifestationModel manifestationModel) {
+            if (t1 == t2 || !allTags.contains(t1) || !allTags.contains(t2)) {
                 throw new IllegalArgumentException();
             }
-            var composit = new Tag("composed", Color.WHITE);
-            // więc albo komponowany tag musi mieć odniesienia do
-            // źródłowych tagów!
-            composit.allSimpleVariations.add()
+            var composite = new Tag("composed", Color.WHITE, List.of(t1, t2));
+
+            var m1 = manifestationModel.observableManifestations.get(t1);
+            var m2 = manifestationModel.observableManifestations.get(t2);
+            var compoManif = CompositeManifestation.composeManifestations(m1, m2);
+            manifestationModel.observableManifestations.remove(t1);
+            manifestationModel.observableManifestations.remove(t2);
+            manifestationModel.observableManifestations.put(composite, compoManif); // :)
+
+
+            allTags.remove(t1);
+            allTags.remove(t2);
+            allTags.add(composite);
         }
 
-
+        void decompose(Tag tag) {
+            allTags.remove(tag);
+            allTags.addAll(tag.components);
+        }
     }
 }

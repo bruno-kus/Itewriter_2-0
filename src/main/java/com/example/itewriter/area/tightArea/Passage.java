@@ -12,6 +12,7 @@ public class Passage /*implements Comparable<Passage>*/{
     }
 
 
+
     static void bindBidirectional(StringProperty stringProperty) {
         stringProperty.addListener(e -> {
         });

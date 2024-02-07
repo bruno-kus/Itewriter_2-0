@@ -1,14 +1,14 @@
 package com.example.itewriter.area.tightArea;
 
 import com.example.itewriter.area.util.MyRange;
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.StringExpression;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleMapProperty;
-import javafx.collections.FXCollections;
+import javafx.beans.value.ObservableBooleanValue;
 import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableMap;
-import javafx.collections.SetChangeListener;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.util.Pair;
 
 import java.util.*;
@@ -22,41 +22,69 @@ public class ManifestationModel {
         return observableManifestations.values().stream()
                 .flatMap(m -> m.getPassagePositions().stream()).sorted().toList();
     }
-
+    public List<Integer> getPositions(Registry.Tag tag) {
+        return observableManifestations.get(tag).getPassagePositions();
+    }
 
     /**
      * Changes to the indexer will be reflected in the manifestation model.
      * zmiany w zamanifestowanych wariacjach
      * powinny być odbite w strefie
      *
-     * @param registry
      * @param tagIndexer
      */
     ManifestationModel(TagIndexer tagIndexer, MyArea area) {
-        observableManifestations.addListener((MapChangeListener<? super Registry.Tag, ? super Manifestation>)
-                change -> {
-                    if (change.wasAdded()) {
-                        final var manifestation = change.getValueAdded();
-                        manifestation.variationObservable().addListener((ob, ov, nv) -> {
-                            final var tag = change.getKey();
-                            final var oldLengths = ov.getLengths().iterator();
-                            final var oldStarts = manifestation.getPassagePositions().iterator();
-                            final var newTexts = nv.getTexts().iterator();
-                            final var builder = area.createMultiChange();
-                            while (oldLengths.hasNext() && oldStarts.hasNext()) {
-                                final var oldStart = oldStarts.next();
-                                builder.replaceText(oldStart, oldStart + oldLengths.next(), newTexts.next());
-                            }
-                            this.updatePositions(
-                                    manifestation.getPassagePositions(),
-                                    ov.getLengths(),
-                                    nv.getLengths()
-                            );
-                        });
-                    }
-                }
-        );
+        observableManifestations.addListener(new PositionUpdater(area));
     }
+
+
+
+
+//    {
+//        BooleanProperty myBool = new SimpleBooleanProperty();
+//        Button button = new MyButton(myBool);
+//    }
+//
+//    private static class MyButton extends Button {
+//        final ObservableBooleanValue flag;
+//        public MyButton(BooleanProperty myBool) {
+//            flag = myBool;
+//            setOnAction(e -> { if (flag.getValue()) System.out.println("Action"); });
+//        }
+//    }
+
+    class PositionUpdater implements MapChangeListener<Registry.Tag, Manifestation> {
+        final MyArea area;
+
+        public PositionUpdater(MyArea area) {
+            this.area = area;
+        }
+
+        @Override
+        public void onChanged(Change<? extends Registry.Tag, ? extends Manifestation> change) {
+            if (change.wasAdded()) {
+                final var manifestation = change.getValueAdded();
+                manifestation.variationObservable().addListener((ob, ov, nv) -> {
+                    final var tag = change.getKey();
+                    final var oldLengths = ov.getLengths().iterator();
+                    final var oldStarts = manifestation.getPassagePositions().iterator();
+                    final var newTexts = nv.getTexts().iterator();
+                    final var builder = area.createMultiChange();
+                    while (oldLengths.hasNext() && oldStarts.hasNext()) {
+                        final var oldStart = oldStarts.next();
+                        builder.replaceText(oldStart, oldStart + oldLengths.next(), newTexts.next());
+                    }
+                    updatePositions(
+                            manifestation.getPassagePositions(),
+                            ov.getLengths(),
+                            nv.getLengths()
+                    );
+                });
+            }
+        }
+    }
+
+}
 
     public static void multiChange(
             MyArea area, List<Pair<MyRange, String>> oldValues, List<Pair<MyRange, String>> newValues) {

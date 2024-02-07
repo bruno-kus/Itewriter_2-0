@@ -11,12 +11,17 @@ public class SimpleVariation {
     /*
     konieczna jest kompozycja nad dziedziczeniem bo nigdy nie chcę, żeby ktoś na wariacji użył setAll!
      */
-    public final ObservableList<StringProperty> allPassages = new SimpleListProperty<>();
+    public final ObservableList<StringProperty> passages = new SimpleListProperty<>();
+
+    public ObservableList<StringProperty> getPassagesProperty() {
+        return passages;
+    }
+
     public List<Integer> getLengths() {
-        return allPassages.stream().map(StringExpression::getValue).map(String::length).toList();
+        return passages.stream().map(StringExpression::getValue).map(String::length).toList();
     }
     public List<String> getTexts() {
-        return allPassages.stream().map(StringExpression::getValue).toList();
+        return passages.stream().map(StringExpression::getValue).toList();
     }
 
 //    {

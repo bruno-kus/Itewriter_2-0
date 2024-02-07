@@ -1,8 +1,6 @@
 package com.example.itewriter.area.tightArea.preview;
 
 import com.example.itewriter.area.tightArea.Manifestation;
-import com.example.itewriter.area.tightArea.SimpleVariation;
-import javafx.beans.property.ListProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ObservableValue;
@@ -15,7 +13,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class CompositeManifestation implements IManifestation {
-    static CompositeManifestation composeManifestations(Manifestation manif1, Manifestation manif2) {
+    public static CompositeManifestation composeManifestations(Manifestation manif1, Manifestation manif2) {
         // merge them!
         record ManifestationPosition(Manifestation manif, int pos) {
         }
@@ -30,8 +28,8 @@ public class CompositeManifestation implements IManifestation {
                 .toList();
         // dzięki temu wiem jak iterować po elementach wariacji :)
         var result = new ArrayList<StringProperty>();
-        var manif1It = manif1.getVariation().allPassages.iterator();
-        var manif2It = manif2.getVariation().allPassages.iterator();
+        var manif1It = manif1.getVariation().passages.iterator();
+        var manif2It = manif2.getVariation().passages.iterator();
         for (var it : sortedManifPos)
             if (it.manif.equals(manif1)) result.add(manif1It.next());
             else result.add(manif2It.next());
@@ -49,7 +47,7 @@ public class CompositeManifestation implements IManifestation {
         sortedManifPos.forEach(mp -> h.passagePositions.add(mp.pos));
         return h;
     }
-    static Collection<Manifestation> decomposeCompositeManifestation(
+    public static Collection<Manifestation> decomposeCompositeManifestation(
             CompositeManifestation composite) {
         return composite.components;
     }

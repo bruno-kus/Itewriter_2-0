@@ -26,7 +26,7 @@ public class MapperSelector {
         selectedVariation = Bindings.createObjectBinding(
                 () -> {
                     var tag = list.getValue().get(currentIndex.getValue());
-                    return tag.getAllSimpleVariationsProperty().get(tagIndexer.getIndex(tag));
+                    return tag.getVariationsProperty().get(tagIndexer.getIndex(tag));
                 },
                 tagIndexer.tagIndices, currentIndex
         );
