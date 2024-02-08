@@ -25,7 +25,7 @@ public class AreaController {
         this.area = area;
         this.registry = registry;
         this.tagIndexer = new TagIndexer(this.registry);
-        manifestationModel = new ManifestationModel(tagIndexer, this);
+        manifestationModel = new ManifestationModel(tagIndexer, area);
         simpleVariationSelector = new SimpleVariationSelector(tagIndexer, selectedTagProperty);
 
         area.setOnKeyPressed(e -> {
@@ -83,14 +83,11 @@ public class AreaController {
         manifestationModel.observableManifestations.remove(tag);
     }
 
-    {
-        Gop c = :
-    }
-    /*
-    czy mogę n ilość tagów łączyć?
-    ależ oczywiście!
-     */
 
+
+
+
+    @Deprecated
     private void recursiveCombinations(Registry.Tag[] tags, int index) {
         // bez sensu, bo nie bierze pod uwagę kolejności w jakiej powinny być własności! najpierw powinna byc matryca
         // tych wszystkich tagów!
@@ -111,49 +108,13 @@ public class AreaController {
         }
     }
 
-    private static class State {
-        public State(Registry.Tag tag, Iterator<Integer> iterator) {
-            this.iterator = iterator;
-            this.tag = tag;
-            position = iterator.next();
-        }
-
-        public final Iterator<Integer> iterator;
-        public final Registry.Tag tag;
-        public int position;
-
-        public Iterator<Integer> getIterator() {
-            return iterator;
-        }
-
-        public Registry.Tag getTag() {
-            return tag;
-        }
-
-        public int getPosition() {
-            return position;
-        }
-    }
-
-    private List<Registry.Tag> getPatternForManyTags(Registry.Tag[] tags) {
-        var states = Arrays.stream(tags).map(tag -> new State(tag, manifestationModel.getPositions(tag).iterator())).toList();
-        var size = Arrays.stream(tags).mapToInt(Registry.Tag::getNumberOfPassages).sum();
-        var result = new ArrayList<Registry.Tag>(size);
-        while (states.stream().map(State::getIterator).anyMatch(Iterator::hasNext)) {
-            var firstState = Collections.min(states, Comparator.comparingInt(State::getPosition));
-            firstState.position = firstState.iterator.next();
-            result.add(firstState.tag);
-        }
-        return result;
-    }
-
 
     public Registry.Tag composeManyTags(Registry.Tag... tags) {
         var tagSet = new HashSet<Registry.Tag>();
         for (var tag : tags) if (!tagSet.add(tag)) throw new IllegalArgumentException();
         if (!registry.allTags.containsAll(tagSet)) throw new IllegalArgumentException();
         var composite = this.registry.new Tag("composed", Color.WHITE, tagSet);
-        var pattern = getPatternForManyTags(tags);
+        var pattern = manifestationModel.getPatternForManyTags(List.of(tags));
         // zamiast budować liniowo mogę też od razu wstawiać elementy na właściwe pozycje, brzmi jak plan
         // powinienem mieć iterator po pozycjach na które ma wstawiać iterator po własnościach
         // własność -> pozycja
@@ -169,7 +130,6 @@ public class AreaController {
                 .reduce(1, (a, b) -> a * b);
         var totalVariationPassages = Arrays.stream(tags).mapToInt(Registry.Tag::getNumberOfPassages)
                 .sum();
-        var c = new ArrayList<>();
 
 
         List<List<StringProperty>> previousCompositeVariations = new ArrayList<>(1);
@@ -181,19 +141,19 @@ public class AreaController {
                     var futureVariation = new ArrayList<StringProperty>(totalVariationPassages);
                     Collections.copy(futureVariation, composedVariation);
                     for (var index : patternMap.get(tag)) {
-                        futureVariation.add(index, variation.getPassagesProperty().get(index));
+                        futureVariation.add(index, variation.getPassagesObservable().get(index));
                     }
                     currentCompositeVariations.add(futureVariation);
                 }
                 previousCompositeVariations = currentCompositeVariations;
             }
         }
-        var compositeVariations = composite.getVariationsProperty();
+
         previousCompositeVariations.stream().map(composedVariation -> {
             var variation = new SimpleVariation();
-            variation.getPassagesProperty().addAll(composedVariation);
+            variation.getPassagesObservable().addAll(composedVariation);
             return variation;
-        }).forEach(compositeVariations::add);
+        }).forEach(composite::addVariation);
         return composite;
     }
 

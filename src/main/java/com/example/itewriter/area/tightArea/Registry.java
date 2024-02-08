@@ -1,8 +1,8 @@
 package com.example.itewriter.area.tightArea;
 
-import com.example.itewriter.area.tightArea.preview.CompositeManifestation;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableSet;
 import javafx.scene.paint.Color;
@@ -66,7 +66,23 @@ public class Registry {
         private final ObservableList<SimpleVariation> allSimpleVariations = FXCollections.observableArrayList();
 
         public ObservableList<SimpleVariation> getVariationsProperty() {
-            return allSimpleVariations;
+            return FXCollections.unmodifiableObservableList(allSimpleVariations);
+        } // może uda się zwracać niemodyfikowalną!
+
+        public void addVariation(SimpleVariation variation) {
+            variation.getPassagesObservable().addListener((ListChangeListener<? super StringProperty>) change -> {
+                while (change.next()) {
+                    var index = change.getFrom();
+                    this.getVariationsProperty().stream().filter(otherVariation -> otherVariation != variation)
+                            .forEach(otherVariation -> {
+                                if (change.wasAdded())
+                                    otherVariation.insertPassage(index, "");
+                                else if (change.wasRemoved()) {
+                                    otherVariation.removePassage(index);
+                                }
+                            });
+                }
+            });
         }
 
         public ObjectProperty<Color> colorProperty() {
@@ -91,6 +107,7 @@ public class Registry {
         public int getNumberOfPassages() {
             return allSimpleVariations.get(0).passages.size();
         }
+
         public boolean setColor(Color color) {
             if (allTags.stream().map(Tag::getColor).noneMatch(color::equals)) {
                 this.color.setValue(color);
@@ -102,33 +119,4 @@ public class Registry {
 
     }
 
-    class Composer {
-        /*
-        czy to oznacza, że same w sobie tagi
-        powinny być abstrakcyjne?
-         */
-        void compose(Tag t1, Tag t2, ManifestationModel manifestationModel) {
-            if (t1 == t2 || !allTags.contains(t1) || !allTags.contains(t2)) {
-                throw new IllegalArgumentException();
-            }
-            var composite = new Tag("composed", Color.WHITE, List.of(t1, t2));
-
-            var m1 = manifestationModel.observableManifestations.get(t1);
-            var m2 = manifestationModel.observableManifestations.get(t2);
-            var compoManif = CompositeManifestation.composeManifestations(m1, m2);
-            manifestationModel.observableManifestations.remove(t1);
-            manifestationModel.observableManifestations.remove(t2);
-            manifestationModel.observableManifestations.put(composite, compoManif); // :)
-
-
-            allTags.remove(t1);
-            allTags.remove(t2);
-            allTags.add(composite);
-        }
-
-        void decompose(Tag tag) {
-            allTags.remove(tag);
-            allTags.addAll(tag.components);
-        }
-    }
 }

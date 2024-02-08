@@ -15,9 +15,7 @@ public class TagIndexer {
     TagIndexer(Registry registry) {
         registry.allSimpleTags.addListener(new RegistryHandler());
     }
-    {
-        Button l;
-    }
+
 
     class RegistryHandler implements SetChangeListener<Registry.Tag> {
         @Override

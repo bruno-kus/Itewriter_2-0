@@ -15,6 +15,7 @@ public class SimpleVariationSelector {
                 () -> selectedTag.getValue().getVariationsProperty().get(tagIndexer.getIndex(selectedTag.getValue())),
                 selectedTag, tagIndexer.getTagIndices()
         );
+
     }
 
     public ObservableValue<SimpleVariation> selectedVariationObservable() {
