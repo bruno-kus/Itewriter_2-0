@@ -5,6 +5,9 @@ import javafx.beans.binding.StringBinding;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
+import java.util.ArrayList;
+import java.util.function.Function;
+
 public class MySegment {
     /*
     okej

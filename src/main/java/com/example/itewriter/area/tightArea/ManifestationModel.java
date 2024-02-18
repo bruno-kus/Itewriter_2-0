@@ -1,49 +1,425 @@
 package com.example.itewriter.area.tightArea;
 
+import com.example.itewriter.area.util.ItewriterCollections;
 import com.example.itewriter.area.util.MyRange;
+import javafx.beans.Observable;
 import javafx.beans.binding.Binding;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.SimpleMapProperty;
-import javafx.beans.value.ObservableListValue;
-import javafx.beans.value.ObservableObjectValue;
+import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.MapChangeListener;
-import javafx.collections.ObservableMap;
-import javafx.scene.Node;
+import javafx.collections.*;
 import javafx.util.Pair;
 import org.reactfx.util.Tuple3;
 import org.reactfx.util.Tuples;
 
 import java.util.*;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class ManifestationModel {
     /*
-    przecież ja to chcę aktualizować od góry do dołu
-    znaczy się to zmienia się cała mapa jednocześnie i dopiero na jej podstawie poszczególne wariacje
-    a nie na odwrót
-    dlaczego?
-    dlatego, że wariacje nie są od siebie niezależne!
-    manifestacja NIGDY nie zmienia się, nie zmieniając przy tym innych wariacji, NIGDY
-
-    i opór był taki, żeby zamiast kopiować to unieważniać ręcznie całą strukturę przy każdej zmianie
-    da się to zrobić z reaktywnymi potokami
+    - zaadaptować funkcyjny offset aby jednak był brudny
+    - stworzyć słuchacza wariacji, który przy każdej zmianie będzie a) dodawał słuchacz do każdego pasażu i odejmował b) przesuwał offsety i generował zmianę w strefie
+    - ale to na samym końcu, bo to będzie robione raz a dobrze w tym momencie, gdy w ogóle tworzę observableValue simple variation!
      */
 
+public class ManifestationModel {
+    private final Property<Map<Registry.Tag, List<Integer>>> positions = new SimpleObjectProperty<>();
+    private final Map<Registry.Tag, List<Integer>> simplePositions = new HashMap<>();
+    private final Binding<Void> simplePositionsObservable = Bindings.createObjectBinding(() -> null);
 
-    private final HashMap<Registry.Tag, List<Integer>> passagePositions = new HashMap<>();
-    private final Binding<Map<Registry.Tag, List<Integer>>> unmodifiablePassagePositions =
-            Bindings.createObjectBinding(
-                    () -> passagePositions.entrySet().stream().collect(Collectors.toMap(
-                            Map.Entry::getKey,
-                            entry -> Collections.unmodifiableList(entry.getValue()))));
-    public ObservableValue<Map<Registry.Tag, List<Integer>>> passagePositionsObservable() {
-        return unmodifiablePassagePositions;
+
+
+
+
+
+
+
+    private final ObservableMap<Registry.Tag, ObservableValue<SimpleVariation>> manifestVariations = new SimpleMapProperty<>();
+
+
+
+
+    {
+        var o = synchronizeMaps(manifestVariations, (tag, variationObservable) -> variationObservable.getValue().getPassagesObservable());
+
+
+    }
+
+    private <A, B, D> Object synchronizeMaps(ObservableMap<A, B> map1,
+
+                                             BiFunction<A, B, ObservableList<D>> projection
+    ) {
+        var map2 = new SimpleMapProperty<A, ObservableList<Property<D>>>();
+        map1.addListener((MapChangeListener<? super A, ? super B>) mapChange -> {
+            if (mapChange.wasAdded()) {
+                var key = mapChange.getKey();
+                var value = mapChange.getValueAdded();
+                var list1 = projection.apply(key, value);
+                map2.putIfAbsent(key, new SimpleListProperty<>());
+                list1.addListener((ListChangeListener<? super D>) listChange -> {
+                    while (listChange.next()) {
+                        if (listChange.wasAdded()) {
+                            int offset = listChange.getFrom();
+                            ItewriterCollections.forEachWithIndex(list1, (d, index) -> {
+                                var list2 = map2.get(key);
+                                list2.add(
+                                        offset + index,
+                                        new SimpleObjectProperty<>(d) {{
+                                            this.bind(Bindings.createObjectBinding(
+                                                    () -> list1.get(list2.indexOf(this)), list1)
+                                            );
+                                        }});
+                            });
+                        }
+                    }
+                });
+            }
+        });
+        return map2;
+    }
+
+    {
+        var posMap = synchronizeMaps(
+                manifestVariations,
+                (observableVariation) -> observableVariation.getValue().getPassagesObservable(),
+                (tag, index) -> positions.getValue().get(tag).get(index),
+                (ignore) -> positions
+        );
+        var texts = synchronizeMaps(
+                manifestVariations,
+                (observableVariation) -> observableVariation.getValue().getPassagesObservable(),
+                (tag, index) -> manifestVariations.get(tag).getValue().getPassagesObservable().get(index),
+                manifestVariations::get
+        );
+
+    }
+
+    public static class GenericManifestationProperty<T> {
+        // na podstawie listy w której się znajdują, czyli potrzebują do niej referencji
+        final List<GenericManifestationProperty<T>> myContainer; // coś takiego powinno być przekazywane w ukryty sposób
+        final ObjectProperty<T> myValue;
+
+        GenericManifestationProperty(T initialValue, List<GenericManifestationProperty<T>> container, Function<Integer, T> getter, Observable dependency) {
+            this.myContainer = container;
+            myValue = new SimpleObjectProperty<>(initialValue);
+            myValue.bind(Bindings.createObjectBinding(
+                    () -> getter.apply(container.indexOf(this)),
+                    dependency)
+            );
+        }
+    }
+
+    private <A, B, D> Object synchronizeMaps(ObservableMap<A, B> map1,
+
+                                             Function<B, ObservableList<?>> listProjection,
+                                             BiFunction<A, Integer, D> extraction,
+
+                                             Function<A, Observable> dependencyFactory
+    ) {
+        var map2 = new SimpleMapProperty<A, ObservableList<GenericManifestationProperty<D>>>();
+        map1.addListener((MapChangeListener<? super A, ? super B>) mapChange -> {
+            if (mapChange.wasAdded()) {
+                var key = mapChange.getKey();
+                var list1 = listProjection.apply(mapChange.getValueAdded());
+                map2.putIfAbsent(key, new SimpleListProperty<>());
+                list1.addListener((ListChangeListener<? super Object>) listChange -> {
+                    while (listChange.next()) {
+                        if (listChange.wasAdded()) {
+                            int offset = listChange.getFrom();
+                            int listChangeSize = listChange.getAddedSize();
+                            Stream.iterate(0, i -> i < listChangeSize, i -> i + 1).forEachOrdered(index -> {
+                                        var list2 = map2.get(key);
+                                        list2.add(offset + index, new GenericManifestationProperty<>(
+                                                extraction.apply(key, index),
+                                                list2,
+                                                i -> extraction.apply(key, i),
+                                                dependencyFactory.apply(key)
+                                        ));
+                                    }
+                            );
+                        }
+                    }
+                });
+            }
+        });
+        return map2;
     }
 
 
-    public final ObservableMap<Registry.Tag, Manifestation> observableManifestations = new SimpleMapProperty<>();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    {
+        /*
+        to powinno być chyba zinline'owane wszystko...
+         */
+        ObservableMap<Registry.Tag, ObservableList<AbstractManifestationMap.AbstractManifestation>> op = new AbstractManifestationMap() {
+
+            @Override
+            Integer computePosition(Registry.Tag tag, int index) {
+                return positions.getValue().get(tag).get(index);
+            }
+
+            @Override
+            Observable computePositionDependency(Registry.Tag tag) {
+                return positions;
+            }
+
+            @Override
+            StringProperty computePassage(Registry.Tag tag, int index) {
+                return manifestVariations.get(tag).getValue().getPassagesObservable().get(index);
+            }
+
+            @Override
+            Observable computePassageDependency(Registry.Tag tag) {
+                return manifestVariations.get(tag);
+            }
+        };
+
+    }
+    abstract class AbstractManifestationMap extends SimpleMapProperty<Registry.Tag, ObservableList<AbstractManifestationMap.AbstractManifestation>> {
+        AbstractManifestationMap() {
+            manifestVariations.addListener((MapChangeListener<? super Registry.Tag, ? super ObservableValue<SimpleVariation>>) mapChange -> {
+                if (mapChange.wasAdded()) {
+                    var tag = mapChange.getKey();
+                    var list1 = mapChange.getValueAdded().getValue().getPassagesObservable();
+                    this.putIfAbsent(tag, new SimpleListProperty<>());
+                    list1.addListener((ListChangeListener<? super Object>) listChange -> {
+                        while (listChange.next()) {
+                            if (listChange.wasAdded()) {
+                                int offset = listChange.getFrom();
+                                int listChangeSize = listChange.getAddedSize();
+                                Stream.iterate(0, i -> i < listChangeSize, i -> i + 1).forEachOrdered(i -> {
+                                            var container = this.get(tag);
+                                            var absoluteIndex = offset + i;
+                                            container.add(absoluteIndex, new AbstractManifestation(
+                                                    computePosition(tag, absoluteIndex),
+                                                    computePassage(tag, absoluteIndex),
+                                                    container,
+                                                    computePositionDependency(tag),
+                                                    computePassageDependency(tag)
+                                            ) {
+                                                @Override
+                                                Integer computePosition(int index) {
+                                                    return AbstractManifestationMap.this.computePosition(tag, index);
+                                                }
+
+                                                @Override
+                                                StringProperty computePassage(int index) {
+                                                    return AbstractManifestationMap.this.computePassage(tag, index);
+                                                }
+                                            });
+                                        }
+                                );
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        abstract Integer computePosition(Registry.Tag tag, int index); // protected?
+        abstract Observable computePositionDependency(Registry.Tag tag);
+        abstract StringProperty computePassage(Registry.Tag tag, int index);
+        abstract Observable computePassageDependency(Registry.Tag tag);
+        public abstract class AbstractManifestation {
+            List<AbstractManifestation> container;
+            ObjectProperty<Integer> position;
+            ObjectProperty<StringProperty> passage;
+
+            AbstractManifestation(Integer initialPosition, StringProperty initialPassage, List<AbstractManifestation> container,
+                                  Observable positionDependency, Observable passageDependency) {
+                this.container = container;
+                this.position = new AbstractProperty<>(initialPosition, positionDependency) {
+                    @Override
+                    Integer computeValue(int index) {
+                        return computePosition(index);
+                    }
+                };
+                this.passage = new AbstractProperty<>(initialPassage, passageDependency) {
+                    @Override
+                    StringProperty computeValue(int index) {
+                        return computePassage(index);
+                    }
+                };
+            }
+            abstract Integer computePosition(int index);
+            abstract StringProperty computePassage(int index);
+
+
+            abstract class AbstractProperty<T> extends SimpleObjectProperty<T> {
+                AbstractProperty(T initialValue, Observable dependency){
+                    super(initialValue);
+                    bind(Bindings.createObjectBinding(
+                            () -> computeValue(container.indexOf(AbstractManifestation.this)),
+                            dependency
+                    ));
+                }
+                abstract T computeValue(int index);
+            }
+        }
+    }
+
+
+
+    public static class MagicManifestation {
+        List<MagicManifestation> container;
+        ObjectProperty<Integer> position;
+        ObjectProperty<StringProperty> passage;
+
+        MagicManifestation(Integer initialPosition, StringProperty initialPassage, List<MagicManifestation> container,
+                           Function<Integer, Integer> positionGetter, Function<Integer, StringProperty> passageGetter,
+                           Observable positionDependency, Observable passageDependency) {
+            this.container = container;
+            this.position = createMagicProperty(initialPosition, positionGetter, positionDependency);
+            this.passage = createMagicProperty(initialPassage, passageGetter, passageDependency);
+        }
+
+        <T> ObjectProperty<T> createMagicProperty(T initialValue, Function<Integer, T> getter, Observable dependency) {
+            return new SimpleObjectProperty<>(initialValue) {{
+                bind(Bindings.createObjectBinding(
+                        () -> getter.apply(container.indexOf(MagicManifestation.this)),
+                        dependency
+                ));
+            }};
+        }
+    }
+
+    {
+        Object opa = inlineMagicManifestationMap(
+                (tag, index) -> positions.getValue().get(tag).get(index),
+                (ignored) -> positions,
+                (tag, index) -> manifestVariations.get(tag).getValue().getPassagesObservable().get(index),
+                manifestVariations::get
+        );
+    }
+
+    private Object inlineMagicManifestationMap(
+            BiFunction<Registry.Tag, Integer, Integer> getPosition,
+
+            Function<Registry.Tag, Observable> whenToUpdatePositions,
+            BiFunction<Registry.Tag, Integer, StringProperty> getPassage,
+            Function<Registry.Tag, Observable> whenToUpdatePassages
+    ) {
+        var map2 = new SimpleMapProperty<Registry.Tag, ObservableList<MagicManifestation>>();
+        manifestVariations.addListener((MapChangeListener<? super Registry.Tag, ? super ObservableValue<SimpleVariation>>) mapChange -> {
+            if (mapChange.wasAdded()) {
+                var key = mapChange.getKey();
+                var list1 = mapChange.getValueAdded().getValue().getPassagesObservable();
+                map2.putIfAbsent(key, new SimpleListProperty<>());
+                list1.addListener((ListChangeListener<? super Object>) listChange -> {
+                    while (listChange.next()) {
+                        if (listChange.wasAdded()) {
+                            int offset = listChange.getFrom();
+                            int listChangeSize = listChange.getAddedSize();
+                            Stream.iterate(0, i -> i < listChangeSize, i -> i + 1).forEachOrdered(index -> {
+                                        var list2 = map2.get(key);
+                                        list2.add(offset + index, new MagicManifestation(
+                                                getPosition.apply(key, index),
+                                                getPassage.apply(key, index),
+                                                list2,
+                                                i -> getPosition.apply(key, i),
+                                                i -> getPassage.apply(key, i),
+                                                whenToUpdatePositions.apply(key),
+                                                whenToUpdatePassages.apply(key)
+                                        ));
+                                    }
+                            );
+                        }
+                    }
+                });
+            }
+        });
+        return map2;
+    }
+
+    {
+        var magics = explicitMakeMagicManifestationMap(
+                manifestVariations,
+                observableVariation -> observableVariation.getValue().getPassagesObservable(),
+                (tag, index) -> positions.getValue().get(tag).get(index),
+                (tag, index) -> manifestVariations.get(tag).getValue().getPassagesObservable().get(index),
+                (ignored) -> positions,
+                manifestVariations::get
+        );
+    }
+
+
+    private <A, B> Object explicitMakeMagicManifestationMap(ObservableMap<A, B> map1,
+
+                                                            Function<B, ObservableList<?>> whenToAdd,
+                                                            BiFunction<A, Integer, Integer> getPosition,
+                                                            BiFunction<A, Integer, StringProperty> getPassage,
+
+                                                            Function<A, Observable> whenToUpdatePositions,
+                                                            Function<A, Observable> whenToUpdatePassages
+    ) {
+        var map2 = new SimpleMapProperty<A, ObservableList<MagicManifestation>>();
+        map1.addListener((MapChangeListener<? super A, ? super B>) mapChange -> {
+            if (mapChange.wasAdded()) {
+                var key = mapChange.getKey();
+                var list1 = whenToAdd.apply(mapChange.getValueAdded());
+                map2.putIfAbsent(key, new SimpleListProperty<>());
+                list1.addListener((ListChangeListener<? super Object>) listChange -> {
+                    while (listChange.next()) {
+                        if (listChange.wasAdded()) {
+                            int offset = listChange.getFrom();
+                            int listChangeSize = listChange.getAddedSize();
+                            Stream.iterate(0, i -> i < listChangeSize, i -> i + 1).forEachOrdered(index -> {
+                                        var list2 = map2.get(key);
+                                        list2.add(offset + index,
+                                                new MagicManifestation(
+                                                        getPosition.apply(key, index),
+                                                        getPassage.apply(key, index),
+                                                        list2,
+                                                        i -> getPosition.apply(key, i),
+                                                        i -> getPassage.apply(key, i),
+                                                        whenToUpdatePositions.apply(key),
+                                                        whenToUpdatePassages.apply(key)
+                                                )
+                                        );
+                                    }
+                            );
+                        }
+                    }
+                });
+            }
+        });
+        return map2;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@Deprecated
+    public final ObservableMap<Registry.Tag, com.example.itewriter.area.tightArea.Manifestation> observableManifestations = new SimpleMapProperty<>();
 
     public final ObservableValue<List<Tuple3<Integer, String, Registry.Tag>>> sortedPassages =
             Bindings.createObjectBinding(this::getSortedPassages, observableManifestations);
@@ -79,16 +455,11 @@ public class ManifestationModel {
 
 
 
-    /*
-    poważne pytanie tutaj
-    jakie mogą być sposoby reprezentowania modelu!
-    chciałem niemodyfikowalne widoki
-    ale jak wtedy rozpoznam czy dodany element był przed czy po obecnie wybranym przez selektor?
 
-    1 lista
-    2 mapa z listą dubletów
-    3 same triplety?
-     */
+
+
+
+
 
     public List<Integer> getAllPositions() {
         return observableManifestations.values().stream()
@@ -101,7 +472,7 @@ public class ManifestationModel {
 
 
     ManifestationModel(TagIndexer tagIndexer, MyArea area) {
-        observableManifestations.addListener(new PositionUpdater(area));
+        observableManifestations.addListener(new Functions(area)); // ?
     }
 
     public void insertPassage(Registry.Tag tag, int position, String text) {
@@ -162,14 +533,14 @@ public class ManifestationModel {
 //                offset += delta;
 //            }
 //        }
-        final var deltaIterator = changes.iterator();
+        var deltaIterator = changes.iterator();
 //        final var tps = manifestations.entrySet().stream().flatMap(entry -> {
 //            final var tag = entry.getKey();
 //            final var positions = entry.getValue().getPassagePositions();
 //            return positions.stream().map(position -> new TP(tag, position));
 //        }).sorted(Comparator.comparing(TP::position)).toList();
 //        manifestations.values().stream().map(Manifestation::getPassagePositions).forEach(List::clear);
-        final ArrayList<TaggedPosition> taggedPositions;
+        ArrayList<TaggedPosition> taggedPositions;
 
         int size = 0;
         for (var manifestation : observableManifestations.values())
@@ -223,7 +594,7 @@ public class ManifestationModel {
         }
     }
 
-    class PositionUpdater implements MapChangeListener<Registry.Tag, Manifestation> {
+    class PositionUpdater implements MapChangeListener<Registry.Tag, com.example.itewriter.area.tightArea.Manifestation> {
         final MyArea area;
 
         public PositionUpdater(MyArea area) {
@@ -246,7 +617,7 @@ public class ManifestationModel {
 
          */
         @Override
-        public void onChanged(Change<? extends Registry.Tag, ? extends Manifestation> change) {
+        public void onChanged(Change<? extends Registry.Tag, ? extends com.example.itewriter.area.tightArea.Manifestation> change) {
             if (change.wasAdded()) {
                 final var manifestation = change.getValueAdded();
                 manifestation.variationObservable().addListener((ob, ov, nv) -> {

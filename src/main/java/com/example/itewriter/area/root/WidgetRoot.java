@@ -15,6 +15,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 
 
@@ -160,7 +161,7 @@ public class WidgetRoot extends VBox {
             return new HBox(mySegmentButton, printButton, indicatorButton);
         }
 
-        public Collection<Node> all() {
+        public List<Node> all() {
             return Stream.of(getClass().getMethods())
                     .filter(method -> method.isAnnotationPresent(Widget.class))
                     .map(m -> {

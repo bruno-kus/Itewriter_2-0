@@ -8,6 +8,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.SetChangeListener;
 
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * to też powinno pozwolić ustawiać index tak jak mi się podoba i jak coś to kontroler waliduje indexowanie
@@ -61,4 +62,7 @@ public class TagSelector {
         if (index >= 0 && index < tags.size()) currentIndex.setValue(index);
         else throw new IllegalArgumentException();
     }
+
+
+
 }

@@ -9,12 +9,10 @@ import org.reactfx.util.Either;
 import java.util.*;
 
 import static com.example.itewriter.area.tightArea.MyArea.EITHER_OPS;
-import static com.example.itewriter.area.util.Collections.moduloIterable;
+import static com.example.itewriter.area.util.ItewriterCollections.cyclicIterable;
 
 public class AreaController {
     MyArea area;
-
-
     private final ManifestationModel manifestationModel;
     Property<Registry.Tag> selectedTagProperty;
     public final SimpleVariationSelector simpleVariationSelector;
@@ -83,10 +81,6 @@ public class AreaController {
         manifestationModel.observableManifestations.remove(tag);
     }
 
-
-
-
-
     @Deprecated
     private void recursiveCombinations(Registry.Tag[] tags, int index) {
         // bez sensu, bo nie bierze pod uwagę kolejności w jakiej powinny być własności! najpierw powinna byc matryca
@@ -135,7 +129,7 @@ public class AreaController {
         List<List<StringProperty>> previousCompositeVariations = new ArrayList<>(1);
         previousCompositeVariations.add(new ArrayList<>(0));
         for (var tag : tags) {
-            for (var variation : moduloIterable(tag.getVariationsProperty(), tagIndexer.getIndex(tag))) {
+            for (var variation : cyclicIterable(tag.getVariationsProperty(), tagIndexer.getIndex(tag))) {
                 List<List<StringProperty>> currentCompositeVariations = new ArrayList<>(totalVariationPassages);
                 for (var composedVariation : previousCompositeVariations) {
                     var futureVariation = new ArrayList<StringProperty>(totalVariationPassages);

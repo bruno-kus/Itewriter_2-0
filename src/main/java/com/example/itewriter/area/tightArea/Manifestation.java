@@ -25,7 +25,7 @@ public class Manifestation {
         // (...)
         passagePositionsObservable.invalidate();
     }
-    public void updatePositions(Iterable<Integer> changes) {
+    public void updatePositions(Iterable<Integer> differences) {
         // iterable = fabryka iteratorów!
     }
     public void insertPassage(int position, String text) {
