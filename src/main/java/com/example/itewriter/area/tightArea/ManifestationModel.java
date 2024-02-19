@@ -24,60 +24,68 @@ import java.util.stream.Stream;
      */
 
 public class ManifestationModel {
-    private final Property<Map<Registry.Tag, List<Integer>>> positions = new SimpleObjectProperty<>();
-    private final Map<Registry.Tag, List<Integer>> simplePositions = new HashMap<>();
-    private final Binding<Void> simplePositionsObservable = Bindings.createObjectBinding(() -> null);
-
-
-
-
-
-
-
-
     private final ObservableMap<Registry.Tag, ObservableValue<SimpleVariation>> manifestVariations = new SimpleMapProperty<>();
+    private final Property<Map<Registry.Tag, List<Integer>>> positions = new SimpleObjectProperty<>();
+    private final SimplePositions simplePositions = new SimplePositions();
 
+    private static class SimplePositions {
+        private final Map<Registry.Tag, List<Integer>> simplePositions = new HashMap<>();
+        private final Binding<Void> simplePositionsObservable = Bindings.createObjectBinding(() -> null);
 
+        public Map<Registry.Tag, List<Integer>> getMap() {
+            return simplePositions;
+        }
+        public Observable getObservable() {
+            return simplePositionsObservable;
+        }
+        private void offsetPositions(Iterable<Integer> pivotsIterable,
+                                     Iterable<Integer> offsetIterable) {
+            simplePositions.forEach((ignored, list) ->
+                    list.replaceAll(new LookUpFunction(pivotsIterable, offsetIterable)::lookup));
+            simplePositionsObservable.invalidate();
+        }
 
+        private void offsetPositions(int pivot, int offset) {
+            simplePositions.forEach((ignored, list) -> {
+                var index = -(Collections.binarySearch(list, pivot) + 1);
+                var listSize = list.size();
+                if (index < listSize)
+                    for (int i = index; i < listSize; i++)
+                        list.set(i, list.get(i) + offset);
+            });
+            simplePositionsObservable.invalidate();
+        }
 
-    {
-        var o = synchronizeMaps(manifestVariations, (tag, variationObservable) -> variationObservable.getValue().getPassagesObservable());
+        private void insertPosition(Registry.Tag tag, int position, int offset) {
+            var list = simplePositions.get(tag);
+            list.add(-(Collections.binarySearch(list, position) + 1), position);
+            offsetPositions(position, offset);
+            simplePositionsObservable.invalidate();
+        }
 
+        static class LookUpFunction {
+            final SortedMap<Integer, Integer> sortedMap = new TreeMap<>();
+            final int maxValue;
 
-    }
-
-    private <A, B, D> Object synchronizeMaps(ObservableMap<A, B> map1,
-
-                                             BiFunction<A, B, ObservableList<D>> projection
-    ) {
-        var map2 = new SimpleMapProperty<A, ObservableList<Property<D>>>();
-        map1.addListener((MapChangeListener<? super A, ? super B>) mapChange -> {
-            if (mapChange.wasAdded()) {
-                var key = mapChange.getKey();
-                var value = mapChange.getValueAdded();
-                var list1 = projection.apply(key, value);
-                map2.putIfAbsent(key, new SimpleListProperty<>());
-                list1.addListener((ListChangeListener<? super D>) listChange -> {
-                    while (listChange.next()) {
-                        if (listChange.wasAdded()) {
-                            int offset = listChange.getFrom();
-                            ItewriterCollections.forEachWithIndex(list1, (d, index) -> {
-                                var list2 = map2.get(key);
-                                list2.add(
-                                        offset + index,
-                                        new SimpleObjectProperty<>(d) {{
-                                            this.bind(Bindings.createObjectBinding(
-                                                    () -> list1.get(list2.indexOf(this)), list1)
-                                            );
-                                        }});
-                            });
-                        }
-                    }
-                });
+            int lookup(int arg) {
+                var v = sortedMap.tailMap(arg);
+                return v.isEmpty() ? maxValue : sortedMap.get(v.firstKey());
             }
-        });
-        return map2;
+
+            LookUpFunction(Iterable<Integer> pivotsIterable, Iterable<Integer> offsetIterable) {
+                var pivots = pivotsIterable.iterator();
+                var offsets = pivotsIterable.iterator();
+                int accumulatedOffset = 0;
+                while (offsets.hasNext()) {
+//                if (pivots.hasNext())
+                    sortedMap.put(pivots.next(), accumulatedOffset);
+                    accumulatedOffset += offsets.next();
+                }
+                maxValue = accumulatedOffset;
+            }
+        }
     }
+
 
     {
         var posMap = synchronizeMaps(
@@ -147,27 +155,7 @@ public class ManifestationModel {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     {
-        /*
-        to powinno być chyba zinline'owane wszystko...
-         */
         ObservableMap<Registry.Tag, ObservableList<AbstractManifestationMap.AbstractManifestation>> op = new AbstractManifestationMap() {
 
             @Override
@@ -192,6 +180,7 @@ public class ManifestationModel {
         };
 
     }
+
     abstract class AbstractManifestationMap extends SimpleMapProperty<Registry.Tag, ObservableList<AbstractManifestationMap.AbstractManifestation>> {
         AbstractManifestationMap() {
             manifestVariations.addListener((MapChangeListener<? super Registry.Tag, ? super ObservableValue<SimpleVariation>>) mapChange -> {
@@ -232,10 +221,15 @@ public class ManifestationModel {
                 }
             });
         }
+
         abstract Integer computePosition(Registry.Tag tag, int index); // protected?
+
         abstract Observable computePositionDependency(Registry.Tag tag);
+
         abstract StringProperty computePassage(Registry.Tag tag, int index);
+
         abstract Observable computePassageDependency(Registry.Tag tag);
+
         public abstract class AbstractManifestation {
             List<AbstractManifestation> container;
             ObjectProperty<Integer> position;
@@ -257,23 +251,25 @@ public class ManifestationModel {
                     }
                 };
             }
+
             abstract Integer computePosition(int index);
+
             abstract StringProperty computePassage(int index);
 
 
             abstract class AbstractProperty<T> extends SimpleObjectProperty<T> {
-                AbstractProperty(T initialValue, Observable dependency){
+                AbstractProperty(T initialValue, Observable dependency) {
                     super(initialValue);
                     bind(Bindings.createObjectBinding(
                             () -> computeValue(container.indexOf(AbstractManifestation.this)),
                             dependency
                     ));
                 }
+
                 abstract T computeValue(int index);
             }
         }
     }
-
 
 
     public static class MagicManifestation {
@@ -403,22 +399,7 @@ public class ManifestationModel {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@Deprecated
+    @Deprecated
     public final ObservableMap<Registry.Tag, com.example.itewriter.area.tightArea.Manifestation> observableManifestations = new SimpleMapProperty<>();
 
     public final ObservableValue<List<Tuple3<Integer, String, Registry.Tag>>> sortedPassages =
@@ -450,15 +431,6 @@ public class ManifestationModel {
         }
         return result;
     }
-
-
-
-
-
-
-
-
-
 
 
     public List<Integer> getAllPositions() {
