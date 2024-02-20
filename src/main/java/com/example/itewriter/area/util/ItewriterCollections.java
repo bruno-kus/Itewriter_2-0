@@ -13,6 +13,45 @@ public class ItewriterCollections {
 //    public static <T> void forEachWithIndex(BiConsumer<T, Integer> biConsumer) {
 //        // ?
 //    }
+
+    public static Iterable<Integer> differenceIterable(Iterable<Integer> minuends, Iterable<Integer> subtrahends) {
+        return new Iterable<>() {
+            final Iterable<Integer> minuendsIterable;
+            final Iterable<Integer> subtrahendsIterable;
+            {
+                this.minuendsIterable = minuends;
+                this.subtrahendsIterable = subtrahends;
+            }
+            @Override
+            public Iterator<Integer> iterator() {
+                return new Iterator<>() {
+                    final Iterator<Integer> minuends = minuendsIterable.iterator();
+                    final Iterator<Integer> subtrahends = subtrahendsIterable.iterator();
+                    @Override
+                    public boolean hasNext() {
+                        return minuends.hasNext() && subtrahends.hasNext();
+                    }
+
+                    @Override
+                    public Integer next() {
+                        return minuends.next() - subtrahends.next();
+                    }
+                };
+            }
+        };
+    }
+    record DeltaIterator(Iterator<Integer> oldLengthIterator,
+                         Iterator<Integer> newLengthIterator) implements Iterator<Integer> {
+        @Override
+        public boolean hasNext() {
+            return newLengthIterator.hasNext() && oldLengthIterator.hasNext();
+        }
+
+        @Override
+        public Integer next() {
+            return newLengthIterator.next() - oldLengthIterator.next();
+        }
+    }
     public static <T> void forEachWithIndex(List<T> list, BiConsumer<? super T, Integer> action) {
         Objects.requireNonNull(list);
         Objects.requireNonNull(action);

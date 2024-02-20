@@ -13,7 +13,7 @@ public class TagIndexer {
     }
 
     TagIndexer(Registry registry) {
-        registry.allSimpleTags.addListener(new RegistryHandler());
+        registry.allTags.addListener(new RegistryHandler());
     }
 
 

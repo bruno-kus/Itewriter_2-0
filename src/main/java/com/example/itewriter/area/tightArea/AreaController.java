@@ -7,6 +7,7 @@ import org.fxmisc.richtext.model.ReadOnlyStyledDocument;
 import org.reactfx.util.Either;
 
 import java.util.*;
+import java.util.stream.StreamSupport;
 
 import static com.example.itewriter.area.tightArea.MyArea.EITHER_OPS;
 import static com.example.itewriter.area.util.ItewriterCollections.cyclicIterable;
@@ -23,49 +24,43 @@ public class AreaController {
         this.area = area;
         this.registry = registry;
         this.tagIndexer = new TagIndexer(this.registry);
-        manifestationModel = new ManifestationModel(tagIndexer, area);
+        manifestationModel = new ManifestationModel(tagIndexer) {
+            @Override
+            void onManifestPassageTextChange(Registry.Tag tag, int position, String oldText, String newText) {
+                area.replaceText(position, position + oldText.length(), newText);
+            }
+
+            @Override
+            void onManifestVariationChange(Registry.Tag tag, Iterable<Integer> positionIterable, Iterable<String> oldTextsIterable, Iterable<String> newTextsIterable) {
+                var builder = area.createMultiChange();
+                var starts = positionIterable.iterator();
+                var ends = StreamSupport.stream(oldTextsIterable.spliterator(), false).map(String::length).iterator();
+                var texts = newTextsIterable.iterator();
+                while (starts.hasNext() || ends.hasNext() || texts.hasNext())
+                    builder.replaceText(starts.next(), ends.next(), texts.next());
+                builder.commit();
+            }
+        };
         simpleVariationSelector = new SimpleVariationSelector(tagIndexer, selectedTagProperty);
 
         area.setOnKeyPressed(e -> {
-            final var carPos = area.getCaretPosition();
-            final var allPos = manifestationModel.getAllPositions();
-            final var i = -(Collections.binarySearch(allPos, carPos) + 1);
-            // znowu potrzebuję czegoś takiego jak taggedposition!
-            // w ogóle mógłbym tutaj mieć listę manifestacji
-            // albo może nawet snapshotów manifestacji!
-//            if (carPos > allPos.get(i) && carPos < allPos.get(i)) +
-
-            l1:
-            for (final var entry : manifestationModel.observableManifestations.entrySet()) {
-                final var passPos = entry.getValue().getPassagePositions();
-                for (final var pos : passPos) {
-                    if (pos == i) {
-                        final var innerIndex = Collections.binarySearch(passPos, i);
-                        final var start = allPos.get(i);
-                        final var end = start + entry.getValue().getVariation().getTexts().get(innerIndex).length();
-                        final var property = entry.getValue().getVariation().passages.get(innerIndex);
-                        if () {
-                            property.setValue(new StringBuilder(property.getValue())
-                                    .insert(carPos - start, e.getText()).toString());
-                        }
-                        break l1;
-                    }
-                }
+            var caretPosition = area.getCaretPosition();
+            // czy poniżej to już powinien być wizytujący?
+            // najpierw znaleźć pomiędzy, którymi pozycjami jest kursor
+            var list = manifestationModel.manifestations.sortedManifestations;
+            var positions = list.stream().map(ManifestationModel.Manifestations.AbstractManifestationMap.Manifestation::getPosition).toList();
+            var index = -(Collections.binarySearch(positions, caretPosition) + 1); // daje mi pozycje większego
+            if (caretPosition < list.get(index - 1).getPosition() + list.get(index - 1).passage.getValue().getValue().length()) { // kursor znajduje się w tekście
+                // uaktualnij własność
             }
-            /*
-            zmapować entry set manifestacji do czegoś jak
-            pozycja -> tag, Variation
-            czy manifestacja powinna mieć wewnątrz siebie taga
-            mogę zamiast tego operować na entrisach!
+            // i ZAWSZE przesuń następne
 
-            pozycję znalezioną w zgromadzeniu łatwo też znaleźć w konkretnej manifestacji (taki sam binSearch)
-             */
+            // kursor znajduje się poza tekstem
+            // śmierdzi mi to wizytującym jak nic!
         });
     }
 
-    public void addTag(/**/) {
-        // najpierw muszę całego stworzyć!
-    }
+
 
     private void addTagToManifestations(Registry.Tag tag) {
         registry.allTags.add(tag);

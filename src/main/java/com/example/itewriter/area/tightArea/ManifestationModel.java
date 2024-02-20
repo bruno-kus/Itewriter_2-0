@@ -2,10 +2,12 @@ package com.example.itewriter.area.tightArea;
 
 import com.example.itewriter.area.util.ItewriterCollections;
 import com.example.itewriter.area.util.MyRange;
+import com.example.itewriter.area.util.SubscriberAdapter;
 import javafx.beans.Observable;
 import javafx.beans.binding.Binding;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.*;
 import javafx.util.Pair;
@@ -13,8 +15,9 @@ import org.reactfx.util.Tuple3;
 import org.reactfx.util.Tuples;
 
 import java.util.*;
+import java.util.concurrent.Flow;
+import java.util.concurrent.SubmissionPublisher;
 import java.util.function.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
     /*
@@ -23,21 +26,239 @@ import java.util.stream.Stream;
     - ale to na samym końcu, bo to będzie robione raz a dobrze w tym momencie, gdy w ogóle tworzę observableValue simple variation!
      */
 
-public class ManifestationModel {
+public abstract class ManifestationModel {
     private final ObservableMap<Registry.Tag, ObservableValue<SimpleVariation>> manifestVariations = new SimpleMapProperty<>();
     private final Property<Map<Registry.Tag, List<Integer>>> positions = new SimpleObjectProperty<>();
     private final SimplePositions simplePositions = new SimplePositions();
+    final Manifestations manifestations = new Manifestations();
+
+    public void insertPassage(Registry.Tag tag, String text, int position) {
+        simplePositions.insertPosition(tag, position, text.length());
+        manifestVariations.get(tag).getValue().insertPassage(
+                Collections.binarySearch(positions.getValue().get(tag), position),
+                text);
+    }
+
+
+    // ale każdy taki listener oprócz przesuwać pozycje w modelu powinien wywoływać też faktyczne zmiany w mapie
+    /*
+    NIE MA ŻADNEGO SENSU rozdzielać aktualizowania poycji w modelu od aktualizowania ich w strefie
+    to powinien być dokładnie ten sam słuchacz
+    a jeśli bym chciał uczynić ManifestationModel abstrakcyjny i kiedy tworzę instancję
+    to implementuję "onPassageModified"
+    onPassageModified(?)
+
+    czy aby na pewno to jest ta metoda to zaimplementowania?
+     */
+    abstract void onManifestPassageTextChange(Registry.Tag tag, int position, String oldText, String newText);
+
+    abstract void onManifestVariationChange(
+            Registry.Tag tag, Iterable<Integer> positions, Iterable<String> oldTexts, Iterable<String> newTexts);
+
+    ManifestationModel(TagIndexer tagIndexer) {
+        Map<Registry.Tag, ChangeListener<String>> listeners = new HashMap<>();
+        tagIndexer.getTagIndices().addListener((MapChangeListener<? super Registry.Tag, ? super Integer>) mapChange -> {
+            var tag = mapChange.getKey();
+            manifestVariations.putIfAbsent(tag, tagIndexer.createBinding(tag));
+            manifestVariations.get(tag).addListener(
+                    (ob, ov, nv) -> {
+                        var pivots = simplePositions.getMap().get(tag);
+                        simplePositions.offsetPositions(
+                                pivots,
+                                ItewriterCollections.differenceIterable(ov.getLengths(), nv.getLengths())); // !
+                        onManifestVariationChange(tag, pivots, ov.getTexts(), nv.getTexts());
+                    }
+            );
+            // to poniższe równie dobrze mogłoby być w manifestacjach
+//            listeners.putIfAbsent(tag, (passage, oldText, newText) -> {
+//                int position = simplePositions.getMap().get(tag).get(
+//                        manifestVariations.get(tag).getValue().getPassagesObservable().indexOf((StringProperty) passage));
+//                simplePositions.offsetPositions(
+//                        position,
+//                        newText.length() - oldText.length());
+//                onManifestPassageTextChange(tag, position, oldText, newText);
+//            });
+//            manifestVariations.get(tag).map(SimpleVariation::getPassagesObservable).addListener(
+//                    (ignored, oldPassages, newPassages) -> {
+//                        oldPassages.forEach(passage -> passage.removeListener(listeners.get(tag)));
+//                        newPassages.forEach(passage -> passage.addListener(listeners.get(tag)));
+//                    }
+//            );
+        });
+    }
+
+    /*
+    UWAGA
+    a manifestacjach są magiczne własności, które są tylko związane z tymi OG
+    muszę korzystać z klasycznych indexOf - nie powinien to być problem
+     */ {
+
+
+    }
+
+    class Manifestations {
+
+        final ObservableList<AbstractManifestationMap.Manifestation> sortedManifestations = new SimpleListProperty<>();
+        // i te dwie rzeczy mogłyby być w module o nazwie manifestations! np. manifestations.sorted(), manifestations.grouped() albo manifestations.asList(), manifestations.asMap()
+        SubmissionPublisher<AbstractManifestationMap.Manifestation> manifestationPublisher = new SubmissionPublisher<>();
+
+        Flow.Subscriber<AbstractManifestationMap.Manifestation> subscriber =
+                (SubscriberAdapter<AbstractManifestationMap.Manifestation>) item -> sortedManifestations.add(
+                        -(Collections.binarySearch(
+                                sortedManifestations,
+                                item,
+                                Comparator.comparing(AbstractManifestationMap.Manifestation::getPosition)
+                        )),
+                        item
+                );
+
+        final ObservableMap<Registry.Tag, ObservableList<AbstractManifestationMap.Manifestation>> groupedManifestations = new AbstractManifestationMap() {
+
+            @Override
+            Integer computePosition(Registry.Tag tag, int index) {
+                return simplePositions.getMap().get(tag).get(index);
+            }
+
+            @Override
+            Observable initializePositionDependency(Registry.Tag tag) {
+                return simplePositions.getObservable();
+            }
+
+            @Override
+            StringProperty computePassage(Registry.Tag tag, int index) {
+                return manifestVariations.get(tag).getValue().getPassagesObservable().get(index);
+            }
+
+            @Override
+            Observable initializePassageDependency(Registry.Tag tag) {
+                return manifestVariations.get(tag);
+            }
+        };
+
+        abstract class AbstractManifestationMap extends SimpleMapProperty<Registry.Tag, ObservableList<AbstractManifestationMap.Manifestation>> {
+            AbstractManifestationMap() {
+                manifestVariations.addListener((MapChangeListener<? super Registry.Tag, ? super ObservableValue<SimpleVariation>>) mapChange -> {
+                    if (mapChange.wasAdded()) {
+                        var tag = mapChange.getKey();
+                        var list1 = mapChange.getValueAdded().getValue().getPassagesObservable();
+                        this.putIfAbsent(tag, new SimpleListProperty<>());
+                        list1.addListener((ListChangeListener<? super Object>) listChange -> {
+                            while (listChange.next()) {
+                                if (listChange.wasAdded()) {
+                                    int offset = listChange.getFrom();
+                                    int listChangeSize = listChange.getAddedSize();
+                                    Stream.iterate(0, i -> i < listChangeSize, i -> i + 1).forEachOrdered(i -> {
+                                                var container = this.get(tag);
+                                                var absoluteIndex = offset + i;
+                                                Manifestation manifestation = new Manifestation(
+                                                        tag,
+                                                        computePosition(tag, absoluteIndex),
+                                                        computePassage(tag, absoluteIndex),
+                                                        container,
+                                                        initializePositionDependency(tag),
+                                                        initializePassageDependency(tag)
+                                                ) {
+                                                    @Override
+                                                    Integer computePosition(int index) {
+                                                        return AbstractManifestationMap.this.computePosition(tag, index);
+                                                    }
+
+                                                    @Override
+                                                    StringProperty computePassage(int index) {
+                                                        return AbstractManifestationMap.this.computePassage(tag, index);
+                                                    }
+                                                };
+                                                container.add(absoluteIndex, manifestation);
+                                                manifestationPublisher.submit(manifestation);
+//                                                sortedManifestations.add(manifestation.getPosition(), manifestation); // tylko binsearch zamiast getPosition
+                                            }
+                                    );
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            abstract Integer computePosition(Registry.Tag tag, int index); // protected?
+
+            abstract Observable initializePositionDependency(Registry.Tag tag);
+
+            abstract StringProperty computePassage(Registry.Tag tag, int index);
+
+            abstract Observable initializePassageDependency(Registry.Tag tag);
+
+            public abstract class Manifestation {
+                List<Manifestation> container;
+                Registry.Tag tag;
+                ObjectProperty<Integer> position;
+                ObjectProperty<StringProperty> passage;
+
+                public int getPosition() {
+                    return position.getValue();
+                }
+
+                public ObservableValue<Integer> positionObservable() {
+                    return position;
+                }
+
+                Manifestation(Registry.Tag tag, Integer initialPosition, StringProperty initialPassage, List<Manifestation> container,
+                              Observable positionDependency, Observable passageDependency) {
+                    this.tag = tag;
+                    this.container = container;
+                    this.position = new AbstractProperty<>(initialPosition, positionDependency) {
+                        @Override
+                        Integer computeValue(int index) {
+                            return computePosition(index);
+                        }
+                    };
+                    this.passage = new AbstractProperty<>(initialPassage, passageDependency) {
+                        @Override
+                        StringProperty computeValue(int index) {
+                            return computePassage(index);
+                        }
+                    };
+                    ChangeListener<String> listener = (ob, ov, nv) -> simplePositions.offsetPositions(position.getValue(), nv.length() - ov.length());
+                    passage.addListener((ob, ov, nv) -> {
+                        ov.removeListener(listener);
+                        nv.addListener(listener);
+                        onManifestPassageTextChange(tag, position.getValue(), ov.getValue(), nv.getValue()));
+                    };
+                }
+
+                abstract Integer computePosition(int index);
+
+                abstract StringProperty computePassage(int index);
+
+
+                abstract class AbstractProperty<T> extends SimpleObjectProperty<T> {
+                    AbstractProperty(T initialValue, Observable dependency) {
+                        super(initialValue);
+                        bind(Bindings.createObjectBinding(
+                                () -> computeValue(container.indexOf(Manifestation.this)),
+                                dependency
+                        ));
+                    }
+
+                    abstract T computeValue(int index);
+                }
+            }
+        }
+    }
 
     private static class SimplePositions {
         private final Map<Registry.Tag, List<Integer>> simplePositions = new HashMap<>();
+
         private final Binding<Void> simplePositionsObservable = Bindings.createObjectBinding(() -> null);
 
         public Map<Registry.Tag, List<Integer>> getMap() {
             return simplePositions;
         }
+
         public Observable getObservable() {
             return simplePositionsObservable;
         }
+
         private void offsetPositions(Iterable<Integer> pivotsIterable,
                                      Iterable<Integer> offsetIterable) {
             simplePositions.forEach((ignored, list) ->
@@ -65,6 +286,7 @@ public class ManifestationModel {
 
         static class LookUpFunction {
             final SortedMap<Integer, Integer> sortedMap = new TreeMap<>();
+
             final int maxValue;
 
             int lookup(int arg) {
@@ -83,6 +305,7 @@ public class ManifestationModel {
                 }
                 maxValue = accumulatedOffset;
             }
+
         }
     }
 
@@ -106,6 +329,7 @@ public class ManifestationModel {
     public static class GenericManifestationProperty<T> {
         // na podstawie listy w której się znajdują, czyli potrzebują do niej referencji
         final List<GenericManifestationProperty<T>> myContainer; // coś takiego powinno być przekazywane w ukryty sposób
+
         final ObjectProperty<T> myValue;
 
         GenericManifestationProperty(T initialValue, List<GenericManifestationProperty<T>> container, Function<Integer, T> getter, Observable dependency) {
@@ -152,123 +376,6 @@ public class ManifestationModel {
             }
         });
         return map2;
-    }
-
-
-    {
-        ObservableMap<Registry.Tag, ObservableList<AbstractManifestationMap.AbstractManifestation>> op = new AbstractManifestationMap() {
-
-            @Override
-            Integer computePosition(Registry.Tag tag, int index) {
-                return positions.getValue().get(tag).get(index);
-            }
-
-            @Override
-            Observable computePositionDependency(Registry.Tag tag) {
-                return positions;
-            }
-
-            @Override
-            StringProperty computePassage(Registry.Tag tag, int index) {
-                return manifestVariations.get(tag).getValue().getPassagesObservable().get(index);
-            }
-
-            @Override
-            Observable computePassageDependency(Registry.Tag tag) {
-                return manifestVariations.get(tag);
-            }
-        };
-
-    }
-
-    abstract class AbstractManifestationMap extends SimpleMapProperty<Registry.Tag, ObservableList<AbstractManifestationMap.AbstractManifestation>> {
-        AbstractManifestationMap() {
-            manifestVariations.addListener((MapChangeListener<? super Registry.Tag, ? super ObservableValue<SimpleVariation>>) mapChange -> {
-                if (mapChange.wasAdded()) {
-                    var tag = mapChange.getKey();
-                    var list1 = mapChange.getValueAdded().getValue().getPassagesObservable();
-                    this.putIfAbsent(tag, new SimpleListProperty<>());
-                    list1.addListener((ListChangeListener<? super Object>) listChange -> {
-                        while (listChange.next()) {
-                            if (listChange.wasAdded()) {
-                                int offset = listChange.getFrom();
-                                int listChangeSize = listChange.getAddedSize();
-                                Stream.iterate(0, i -> i < listChangeSize, i -> i + 1).forEachOrdered(i -> {
-                                            var container = this.get(tag);
-                                            var absoluteIndex = offset + i;
-                                            container.add(absoluteIndex, new AbstractManifestation(
-                                                    computePosition(tag, absoluteIndex),
-                                                    computePassage(tag, absoluteIndex),
-                                                    container,
-                                                    computePositionDependency(tag),
-                                                    computePassageDependency(tag)
-                                            ) {
-                                                @Override
-                                                Integer computePosition(int index) {
-                                                    return AbstractManifestationMap.this.computePosition(tag, index);
-                                                }
-
-                                                @Override
-                                                StringProperty computePassage(int index) {
-                                                    return AbstractManifestationMap.this.computePassage(tag, index);
-                                                }
-                                            });
-                                        }
-                                );
-                            }
-                        }
-                    });
-                }
-            });
-        }
-
-        abstract Integer computePosition(Registry.Tag tag, int index); // protected?
-
-        abstract Observable computePositionDependency(Registry.Tag tag);
-
-        abstract StringProperty computePassage(Registry.Tag tag, int index);
-
-        abstract Observable computePassageDependency(Registry.Tag tag);
-
-        public abstract class AbstractManifestation {
-            List<AbstractManifestation> container;
-            ObjectProperty<Integer> position;
-            ObjectProperty<StringProperty> passage;
-
-            AbstractManifestation(Integer initialPosition, StringProperty initialPassage, List<AbstractManifestation> container,
-                                  Observable positionDependency, Observable passageDependency) {
-                this.container = container;
-                this.position = new AbstractProperty<>(initialPosition, positionDependency) {
-                    @Override
-                    Integer computeValue(int index) {
-                        return computePosition(index);
-                    }
-                };
-                this.passage = new AbstractProperty<>(initialPassage, passageDependency) {
-                    @Override
-                    StringProperty computeValue(int index) {
-                        return computePassage(index);
-                    }
-                };
-            }
-
-            abstract Integer computePosition(int index);
-
-            abstract StringProperty computePassage(int index);
-
-
-            abstract class AbstractProperty<T> extends SimpleObjectProperty<T> {
-                AbstractProperty(T initialValue, Observable dependency) {
-                    super(initialValue);
-                    bind(Bindings.createObjectBinding(
-                            () -> computeValue(container.indexOf(AbstractManifestation.this)),
-                            dependency
-                    ));
-                }
-
-                abstract T computeValue(int index);
-            }
-        }
     }
 
 
@@ -443,10 +550,6 @@ public class ManifestationModel {
     }
 
 
-    ManifestationModel(TagIndexer tagIndexer, MyArea area) {
-        observableManifestations.addListener(new Functions(area)); // ?
-    }
-
     public void insertPassage(Registry.Tag tag, int position, String text) {
         observableManifestations.get(tag).insertPassage(position, text);
 
@@ -490,7 +593,7 @@ public class ManifestationModel {
                 return newLengthIterator.next() - oldLengthIterator.next();
             }
         }
-        ;
+
         Iterable<Integer> changes = () -> new DeltaIterator(changingOldLengths.iterator(), changingNewLengths.iterator());
 
 //        for (var entry : observableManifestations.entrySet()) {
